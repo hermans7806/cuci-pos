@@ -1,0 +1,5 @@
+package com.fastclean.cuci_pos
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
