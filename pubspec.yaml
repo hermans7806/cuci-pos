@@ -37,11 +37,12 @@ dependencies:
   firebase_messaging: ^15.0.0
   flutter_riverpod: ^3.0.0
   mobile_scanner: ^5.1.1
-  esc_pos_bluetooth: ^0.4.0
+  print_bluetooth_thermal: ^1.1.5
   sqflite: ^2.3.0
   intl: ^0.19.0
   uuid: ^4.3.3
   path_provider: ^2.1.0
+  google_sign_in: ^6.2.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -99,8 +100,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-dependency_overrides:
-  flutter_bluetooth_basic:
-    git:
-      url: https://github.com/gokhanbarisaker/flutter_bluetooth_basic.git
-      ref: master
+
