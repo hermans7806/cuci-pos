@@ -6,6 +6,10 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+dependencies {
+    implementation("com.google.firebase:firebase-analytics")
+}
+
 android {
     namespace = "com.fastclean.cuci_pos"
     compileSdk = flutter.compileSdkVersion

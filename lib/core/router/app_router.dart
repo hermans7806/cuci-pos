@@ -1,19 +1,15 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case '/':
-        final user = FirebaseAuth.instance.currentUser;
-        return MaterialPageRoute(
-          builder: (_) =>
-              user == null ? const LoginScreen() : const LoginScreen(),
-        );
-      case '/dashboard':
+      case '/login':
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
       default:
         return MaterialPageRoute(
           builder: (_) =>

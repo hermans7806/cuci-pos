@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        'assets/fast_clean4-02.png',
+                        'lib/assets/fast_clean4-02.png',
                         height: isTablet ? 200 : 140,
                       ),
                       const SizedBox(height: 32),
@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _isLoading ? null : _loginWithGoogle,
                           icon: Image.asset(
-                            'assets/google_logo.png',
+                            'lib/assets/google_logo.png',
                             height: 24,
                           ),
                           label: const Text(
