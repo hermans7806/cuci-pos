@@ -1,20 +1,81 @@
+// lib/core/router/app_router.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/register_screen.dart';
+import '../../features/dashboard/screens/dashboard_screen.dart';
+import '../../features/profile/controllers/profile_controller.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/settings/screens/branch_screen.dart';
+import '../../features/settings/screens/role_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/login':
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
+        return _page(const LoginScreen());
+
       case '/profile':
-        return MaterialPageRoute(builder: (_) => const ProfileScreen());
+        return _page(const ProfileScreen());
+
+      case '/register':
+        return _page(const RegisterScreen());
+
+      case '/forgot-password':
+        return _page(const ForgotPasswordScreen());
+
+      case '/dashboard':
+        return _page(DashboardScreen());
+
+      // OWNER PROTECTED ROUTES
+      case '/settings':
+        return _protectedOwner(() => const SettingsScreen());
+
+      case '/settings/role':
+        return _protectedOwner(() => RoleScreen());
+
+      case '/settings/branch':
+        return _protectedOwner(() => BranchScreen());
+
       default:
-        return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text("Page not found"))),
+        return _page(
+          const Scaffold(body: Center(child: Text("Page not found"))),
         );
     }
+  }
+
+  static MaterialPageRoute _page(Widget page) =>
+      MaterialPageRoute(builder: (_) => page);
+
+  static MaterialPageRoute _protectedOwner(Widget Function() screenBuilder) {
+    return MaterialPageRoute(
+      builder: (_) {
+        final profile = Get.find<ProfileController>();
+
+        return Obx(() {
+          final role = profile.role.value;
+
+          if (role == "") {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (role != "owner") {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (Get.currentRoute != '/dashboard') {
+                Get.offAllNamed('/dashboard');
+              }
+            });
+            return const Scaffold();
+          }
+
+          return screenBuilder();
+        });
+      },
+    );
   }
 }

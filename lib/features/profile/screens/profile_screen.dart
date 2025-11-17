@@ -1,191 +1,166 @@
-import 'dart:io';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:get/get.dart';
 
 import '../controllers/profile_controller.dart';
-import '../widgets/profile_avatar.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  final user = FirebaseAuth.instance.currentUser!;
-  final _formKey = GlobalKey<FormState>();
-  final picker = ImagePicker();
-
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController nicknameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final _controller = ProfileController();
-
-  bool biometricEnabled = false;
-  bool isUploading = false;
-  String? imageUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController.text = user.displayName ?? '';
-    imageUrl = user.photoURL;
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final data = await _controller.loadProfile();
-    if (data != null) {
-      setState(() {
-        nameController.text = data['displayName'] ?? '';
-        nicknameController.text = data['nickname'] ?? '';
-        phoneController.text = data['phone'] ?? '';
-        imageUrl = data['photoURL'];
-      });
-    }
-  }
-
-  Future<void> _pickAndUploadAvatar() async {
-    final source = await showDialog<ImageSource>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pilih Sumber Foto'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera),
-              title: const Text('Kamera'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeri'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (source == null) return;
-    final picked = await picker.pickImage(source: source, imageQuality: 80);
-    if (picked == null) return;
-
-    setState(() => isUploading = true);
-    try {
-      final file = File(picked.path);
-      final url = await _controller.uploadAvatar(file);
-      setState(() => imageUrl = url);
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Upload gagal: $e')));
-    } finally {
-      setState(() => isUploading = false);
-    }
-  }
-
-  Future<void> _deleteAvatar() async {
-    try {
-      await _controller.deleteAvatar();
-      setState(() => imageUrl = null);
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal hapus foto: $e')));
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final controller = Get.find<ProfileController>();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Profil Saya"),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+      appBar: AppBar(title: const Text("Profile")),
+      body: Obx(() {
+        final user = controller.user.value;
+
+        if (controller.isLoading.value || user == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              if (isUploading)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
-                )
-              else
-                ProfileAvatar(
-                  imageUrl: imageUrl,
-                  isUploading: isUploading,
-                  onChangeAvatar: _pickAndUploadAvatar,
-                  onDeleteAvatar: _deleteAvatar,
-                ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: "Nama Lengkap",
-                  border: OutlineInputBorder(),
+              // Avatar
+              CircleAvatar(
+                radius: 55,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: user.photoURL != null
+                    ? NetworkImage(user.photoURL!)
+                    : null,
+                child: user.photoURL == null
+                    ? const Icon(Icons.person, size: 55, color: Colors.grey)
+                    : null,
+              ),
+              const SizedBox(height: 20),
+
+              // Name
+              Text(
+                user.displayName ?? "No Name",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: nicknameController,
-                decoration: const InputDecoration(
-                  labelText: "Nama Panggilan",
-                  border: OutlineInputBorder(),
+
+              const SizedBox(height: 6),
+
+              // Email
+              Text(
+                user.email ?? "-",
+                style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+              ),
+
+              const SizedBox(height: 25),
+              const Divider(),
+
+              // Items
+              _item(
+                icon: Icons.phone,
+                title: "Phone Number",
+                value: controller.phoneNumber.value.isNotEmpty
+                    ? controller.phoneNumber.value
+                    : "Not Set",
+              ),
+              const SizedBox(height: 15),
+
+              _item(
+                icon: Icons.person_outline,
+                title: "Display Name",
+                value: user.displayName ?? "-",
+              ),
+              const SizedBox(height: 15),
+
+              _item(
+                icon: Icons.verified_user,
+                title: "Email Verified",
+                value: user.emailVerified ? "Verified" : "Not Verified",
+              ),
+              const SizedBox(height: 15),
+
+              _item(
+                icon: Icons.calendar_month,
+                title: "Account Created",
+                value: controller.formatDate(user.metadata.creationTime),
+              ),
+
+              const SizedBox(height: 40),
+
+              // Logout Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.logout),
+                  label: const Text(
+                    "Logout",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () => _confirmLogout(controller),
                 ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: "Nomor HP",
-                  border: OutlineInputBorder(),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _item({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 26),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                enabled: false,
-                initialValue: user.email,
-                decoration: const InputDecoration(
-                  labelText: "Email (tidak bisa diubah)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text("Gunakan Login Biometrik (Coming Soon)"),
-                value: biometricEnabled,
-                onChanged: (val) {
-                  setState(() {
-                    biometricEnabled = val;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text("Logout"),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  void _confirmLogout(ProfileController controller) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(child: const Text("Cancel"), onPressed: () => Get.back()),
+          ElevatedButton(
+            child: const Text("Logout"),
+            onPressed: () {
+              Get.back();
+              controller.logout();
+            },
+          ),
+        ],
       ),
     );
   }

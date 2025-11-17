@@ -17,18 +17,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _loginWithEmail() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     await _authController.loginWithEmail(
       email: _emailController.text,
       password: _passwordController.text,
       context: context,
     );
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
   Future<void> _loginWithGoogle() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     await _authController.loginWithGoogle(context);
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
@@ -162,6 +166,36 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 24),
+                      // 🔹 Forgot Password
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/forgot-password');
+                        },
+                        child: const Text(
+                          "Forgot your password?",
+                          style: TextStyle(color: Colors.blue),
+                        ),
+                      ),
+                      // 🔹 Register link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Don't have an account? "),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/register');
+                            },
+                            child: const Text(
+                              "Register",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 32),
 

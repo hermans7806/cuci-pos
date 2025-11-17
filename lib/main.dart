@@ -1,23 +1,38 @@
+import 'package:cuci_pos/features/auth/screens/login_screen.dart';
+import 'package:cuci_pos/features/dashboard/screens/dashboard_screen.dart';
+import 'package:cuci_pos/features/profile/controllers/profile_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import 'features/auth/widgets/auth_gate.dart';
+import 'core/router/app_router.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Only initialize once, even if hot reload or re-run occurs
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 🔥 Listen to login/logout globally (recommended)
+  FirebaseAuth.instance.authStateChanges().listen((user) async {
+    if (user != null) {
+      if (!Get.isRegistered<ProfileController>()) {
+        Get.put(ProfileController(), permanent: true);
+      }
+
+      final ctrl = Get.find<ProfileController>();
+      await ctrl.loadProfile();
+
+      if (Get.currentRoute != '/dashboard') {
+        Get.offAll(() => const DashboardScreen());
+      }
+    } else {
+      if (Get.currentRoute != '/login') {
+        Get.offAll(() => const LoginScreen());
+      }
     }
-  } catch (e) {
-    // Safe catch for duplicate-app or other init errors
-    debugPrint('🔥 Firebase init error: $e');
-  }
+  });
 
   runApp(const MyApp());
 }
@@ -27,14 +42,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Fastclean Laundry POS',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(),
+      onGenerateRoute: AppRouter.generateRoute,
+      home: const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
 }
