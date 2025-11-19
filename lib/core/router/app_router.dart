@@ -19,7 +19,7 @@ class AppRouter {
         return _page(const LoginScreen());
 
       case '/profile':
-        return _page(const ProfileScreen());
+        return _page(ProfileScreen());
 
       case '/register':
         return _page(const RegisterScreen());

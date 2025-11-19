@@ -40,13 +40,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Hai, ${profileCtrl.nickname.value}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Obx(() {
+                        return Text(
+                          'Hai, ${profileCtrl.nickname.value}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }),
+
                       const Text(
                         'Selamat datang kembali di Fastclean Medit',
                         style: TextStyle(fontSize: 12.5, color: Colors.black54),
