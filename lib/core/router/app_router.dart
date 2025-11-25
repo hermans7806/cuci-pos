@@ -11,6 +11,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/branch_screen.dart';
 import '../../features/settings/screens/role_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/staff_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -39,6 +40,9 @@ class AppRouter {
 
       case '/settings/branch':
         return _protectedOwner(() => BranchScreen());
+
+      case '/settings/staff':
+        return _protectedOwner(() => StaffScreen());
 
       default:
         return _page(

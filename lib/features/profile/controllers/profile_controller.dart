@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/top_notification.dart';
+
 class ProfileController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -178,17 +180,18 @@ class ProfileController extends GetxController {
       userData.value = (userData.value ?? {})
         ..['displayName'] = displayName.value;
 
-      Get.snackbar(
-        'Success',
-        'Profile berhasil diperbarui',
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: "Success",
+        message: "Sukses Menyimpan Profile",
+        success: true,
       );
+      nickname.value = nicknameController.text.trim();
     } catch (e) {
       debugPrint('saveProfile error: $e');
-      Get.snackbar(
-        'Error',
-        'Gagal menyimpan profil: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: "Failed",
+        message: "Gagal Menyimpan Profile",
+        success: false,
       );
       rethrow;
     } finally {
@@ -243,12 +246,16 @@ class ProfileController extends GetxController {
       photoURL.value = url;
       userData.value = (userData.value ?? {})..['photoURL'] = url;
 
-      Get.snackbar('Success', 'Foto profil berhasil diunggah');
+      TopNotification.show(
+        title: "Sukses",
+        message: "Foto Profil Berhasil Diunggah",
+        success: true,
+      );
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal mengunggah foto: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: "Error",
+        message: "Gagal mengunggah foto: $e",
+        success: false,
       );
     } finally {
       isUploading.value = false;
@@ -284,17 +291,17 @@ class ProfileController extends GetxController {
       userData.value = (userData.value ?? {})..remove('photoURL');
       avatarFile.value = null;
 
-      Get.snackbar(
-        'Success',
-        'Foto profil dihapus',
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: "Sukses",
+        message: "Foto profil dihapus",
+        success: true,
       );
     } catch (e) {
       debugPrint('Delete avatar error: $e');
-      Get.snackbar(
-        'Error',
-        'Gagal menghapus foto: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: "Error",
+        message: "Gagal menghapus foto: $e",
+        success: false,
       );
       rethrow;
     } finally {
@@ -303,43 +310,44 @@ class ProfileController extends GetxController {
   }
 
   /// Change password with re-authentication
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    final u = _auth.currentUser;
-    if (u == null || u.email == null) throw Exception('User not found');
-
-    try {
-      isLoading.value = true;
-      final cred = EmailAuthProvider.credential(
-        email: u.email!,
-        password: currentPassword,
-      );
-      await u.reauthenticateWithCredential(cred);
-      await u.updatePassword(newPassword);
-
-      // store change time in Firestore
-      await _firestore.collection('users').doc(u.uid).update({
-        'passwordChangedAt': FieldValue.serverTimestamp(),
-      });
-
-      Get.snackbar(
-        'Success',
-        'Password berhasil diganti',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } on FirebaseAuthException catch (e) {
-      debugPrint('changePassword error: ${e.code} - ${e.message}');
-      // translate common codes
-      String msg = e.message ?? 'Gagal mengganti password';
-      if (e.code == 'wrong-password') msg = 'Password saat ini salah';
-      if (e.code == 'weak-password') msg = 'Password baru terlalu lemah';
-      throw Exception(msg);
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  // Future<void> changePassword({
+  //   required String currentPassword,
+  //   required String newPassword,
+  // }) async {
+  //   final u = _auth.currentUser;
+  //   if (u == null || u.email == null) throw Exception('User not found');
+  //
+  //   try {
+  //     isLoading.value = true;
+  //     final cred = EmailAuthProvider.credential(
+  //       email: u.email!,
+  //       password: currentPassword,
+  //     );
+  //     await u.reauthenticateWithCredential(cred);
+  //     await u.updatePassword(newPassword);
+  //
+  //     // store change time in Firestore
+  //     await _firestore.collection('users').doc(u.uid).update({
+  //       'passwordChangedAt': FieldValue.serverTimestamp(),
+  //     });
+  //
+  //     Get.snackbar(
+  //       'Success',
+  //       'Password berhasil diganti',
+  //       snackPosition: SnackPosition.BOTTOM,
+  //     );
+  //
+  //   } on FirebaseAuthException catch (e) {
+  //     debugPrint('changePassword error: ${e.code} - ${e.message}');
+  //     // translate common codes
+  //     String msg = e.message ?? 'Gagal mengganti password';
+  //     if (e.code == 'wrong-password') msg = 'Password saat ini salah';
+  //     if (e.code == 'weak-password') msg = 'Password baru terlalu lemah';
+  //     throw Exception(msg);
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 
   /// Logout
   Future<void> logout() async {

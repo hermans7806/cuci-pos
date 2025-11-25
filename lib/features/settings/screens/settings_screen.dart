@@ -32,6 +32,11 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/settings/role'),
             ),
+            ListTile(
+              title: const Text("Staff/User Management"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, '/settings/staff'),
+            ),
           ],
         ),
       );

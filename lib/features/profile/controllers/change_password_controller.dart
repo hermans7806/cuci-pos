@@ -1,3 +1,4 @@
+import 'package:cuci_pos/core/utils/top_notification.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -28,28 +29,29 @@ class ChangePasswordController extends GetxController {
     final confirm = confirmPasswordController.text.trim();
 
     if (old.isEmpty || newPass.isEmpty || confirm.isEmpty) {
-      Get.snackbar(
-        "Missing fields",
-        "Please fill all fields.",
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: 'Missing Fields',
+        message: 'Mohon isi semua fields',
+        success: false,
       );
       return;
     }
 
     if (newPass != confirm) {
-      Get.snackbar(
-        "Password mismatch",
-        "New passwords do not match.",
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: 'Password mismatch',
+        message: 'Password baru tidak sama',
+        success: false,
       );
       return;
     }
 
     if (!validatePassword(newPass)) {
-      Get.snackbar(
-        "Weak password",
-        "Password must contain:\n- 1 capital letter\n- 1 number\n- 1 special character\n- At least 8 characters",
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: 'Weak Password',
+        message:
+            'Password harus mempunyai setidaknya:\n- 1 huruf kapital\n- 1 angka\n- 1 karakter spesial seperti @,&,%,dsb.\n- minimal 8 karakter.',
+        success: false,
       );
       return;
     }
@@ -60,7 +62,11 @@ class ChangePasswordController extends GetxController {
       final user = auth.currentUser;
 
       if (user == null) {
-        Get.snackbar("Error", "User not logged in.");
+        TopNotification.show(
+          title: 'Error',
+          message: 'User belum login!',
+          success: false,
+        );
         return;
       }
 
@@ -77,10 +83,10 @@ class ChangePasswordController extends GetxController {
 
       Get.back(); // Close modal
 
-      Get.snackbar(
-        "Success",
-        "Your password has been updated.",
-        snackPosition: SnackPosition.BOTTOM,
+      TopNotification.show(
+        title: 'Sukses',
+        message: 'Password berhasil diganti.',
+        success: true,
       );
     } on FirebaseAuthException catch (e) {
       String msg = "Something went wrong.";
@@ -92,7 +98,7 @@ class ChangePasswordController extends GetxController {
         msg = "Please login again to continue.";
       }
 
-      Get.snackbar("Error", msg, snackPosition: SnackPosition.BOTTOM);
+      TopNotification.show(title: 'Error', message: msg, success: false);
     } finally {
       isLoading.value = false;
     }
