@@ -8,8 +8,12 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/profile/controllers/profile_controller.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/settings/screens/add_service_category_screen.dart';
 import '../../features/settings/screens/branch_screen.dart';
+import '../../features/settings/screens/package_screen.dart';
+import '../../features/settings/screens/product_management_screen.dart';
 import '../../features/settings/screens/role_screen.dart';
+import '../../features/settings/screens/service_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/staff_screen.dart';
 
@@ -43,6 +47,18 @@ class AppRouter {
 
       case '/settings/staff':
         return _protectedOwner(() => StaffScreen());
+
+      case '/settings/product':
+        return _protectedOwner(() => const ProductManagementScreen());
+
+      case '/settings/product/paket':
+        return _protectedOwner(() => PackageScreen());
+
+      case '/settings/product/service':
+        return _protectedOwner(() => ServiceScreen());
+
+      case '/settings/product/service/add-service':
+        return _protectedOwner(() => AddServiceCategoryScreen());
 
       default:
         return _page(
