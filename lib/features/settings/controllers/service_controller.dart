@@ -10,9 +10,11 @@ class ServiceController extends GetxController {
 
   final categories = <ServiceCategoryModel>[].obs;
   final isLoading = false.obs;
+  final categoryUnit = "Satuan".obs;
 
   // TEMP in-memory buffer for items when creating a new category
   final tempItems = <ServiceItemModel>[].obs;
+  bool initializedForAdd = false;
 
   @override
   void onInit() {
@@ -48,6 +50,7 @@ class ServiceController extends GetxController {
     batch.set(catRef, {
       "name": categoryName,
       "types": types,
+      "unit": categoryUnit.value,
       "createdAt": FieldValue.serverTimestamp(),
     });
 
@@ -72,7 +75,11 @@ class ServiceController extends GetxController {
     final batch = _db.batch();
 
     // Update category data
-    batch.update(catRef, {"name": categoryName, "types": types});
+    batch.update(catRef, {
+      "name": categoryName,
+      "types": types,
+      "unit": categoryUnit.value,
+    });
 
     // Delete old items
     final oldItems = await catRef.collection("items").get();
@@ -115,6 +122,7 @@ class ServiceController extends GetxController {
             id: doc.id,
             categoryName: data['name'] ?? '',
             processTypes: List<String>.from(data['types'] ?? []),
+            unit: data['unit'] ?? '',
             items: items,
           ),
         );

@@ -160,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade600,
         onPressed: () {
-          // TODO: navigate to add order
+          Navigator.pushNamed(context, '/create-order');
         },
         child: const Icon(Icons.add, size: 32),
       ),
@@ -176,6 +176,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           switch (index) {
             case 0:
               Navigator.pushNamed(context, '/dashboard'); // Beranda
+              break;
+
+            case 2:
+              Navigator.pushNamed(context, '/create-order');
               break;
 
             case 4:

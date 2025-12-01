@@ -20,9 +20,6 @@ class _ServiceItemBottomSheetState extends State<ServiceItemBottomSheet> {
   final notesCtrl = TextEditingController();
   final durationCtrl = TextEditingController();
 
-  // unit radio (Kg, Meter, Satuan)
-  String unit = 'Kg';
-
   // estimated unit selector (jam, hari)
   String estUnit = 'jam';
 
@@ -53,36 +50,6 @@ class _ServiceItemBottomSheetState extends State<ServiceItemBottomSheet> {
                 TextField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Nama Layanan'),
-                ),
-
-                const SizedBox(height: 8),
-                // Unit radio
-                Row(
-                  children: [
-                    Expanded(child: Text('Unit:')),
-                    Row(
-                      children: [
-                        Radio<String>(
-                          value: 'Kg',
-                          groupValue: unit,
-                          onChanged: (v) => setState(() => unit = v!),
-                        ),
-                        const Text('Kg'),
-                        Radio<String>(
-                          value: 'Meter',
-                          groupValue: unit,
-                          onChanged: (v) => setState(() => unit = v!),
-                        ),
-                        const Text('Meter'),
-                        Radio<String>(
-                          value: 'Satuan',
-                          groupValue: unit,
-                          onChanged: (v) => setState(() => unit = v!),
-                        ),
-                        const Text('Satuan'),
-                      ],
-                    ),
-                  ],
                 ),
 
                 const SizedBox(height: 8),
@@ -174,19 +141,19 @@ class _ServiceItemBottomSheetState extends State<ServiceItemBottomSheet> {
     final item = ServiceItemModel(
       id: tempId,
       name: name,
-      unit: unit,
       price: price,
       durationHours: durationHours,
       notes: notes,
     );
 
     controller.addTempItem(item);
+    controller.tempItems.refresh();
 
-    nameCtrl.text = '';
-    priceCtrl.text = '';
-    durationCtrl.text = '';
-    notesCtrl.text = '';
+    // nameCtrl.clear();
+    // priceCtrl.clear();
+    // durationCtrl.clear();
+    // notesCtrl.clear();
 
-    // Get.back(); // dismiss bottom sheet
+    Get.back(); // dismiss bottom sheet
   }
 }

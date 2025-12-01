@@ -21,8 +21,8 @@ class ServiceScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final controller = Get.put(ServiceController());
-    controller.fetchCategories();
+    final controller = Get.put(ServiceController(), permanent: true);
+    // controller.fetchCategories();
 
     void _confirmDeleteCategory(
       BuildContext context,
@@ -132,12 +132,12 @@ class ServiceScreen extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // CATEGORY TITLE
+                // CATEGORY HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      category.categoryName,
+                      "${category.categoryName} (${category.unit})",
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -154,7 +154,7 @@ class ServiceScreen extends StatelessWidget {
                   ],
                 ),
 
-                // PROCESS TYPES
+                // Process Types
                 Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 8),
                   child: Text(
@@ -163,20 +163,18 @@ class ServiceScreen extends StatelessWidget {
                   ),
                 ),
 
-                // SERVICE ITEMS
+                // Service Items
                 ...category.items.map(
                   (item) => Card(
                     child: ListTile(
-                      title: Text("${item.unit.toUpperCase()} • ${item.name}"),
+                      title: Text(item.name),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Rp ${item.price}"),
-                            Text(
-                              "${item.durationHours ~/ 24} hari • ${item.unit}",
-                            ),
+                            Text("Rp ${item.price} / ${category.unit}"),
+                            Text("${item.durationHours} jam"),
                             if (item.notes != null && item.notes!.isNotEmpty)
                               Text(
                                 item.notes!,

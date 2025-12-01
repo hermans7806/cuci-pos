@@ -4,14 +4,39 @@ import 'package:get/get.dart';
 import '../../../data/models/package_model.dart';
 
 class PackageController extends GetxController {
-  final _collection = FirebaseFirestore.instance.collection('package');
-
+  final _collection = FirebaseFirestore.instance.collection('packages');
+  final serviceItems = <Map<String, dynamic>>[].obs;
   final packages = <PackageModel>[].obs;
+  final isServiceExpanded = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     fetchPackages();
+    fetchServiceItems();
+  }
+
+  Future<void> fetchServiceItems() async {
+    final servicesCol = FirebaseFirestore.instance.collection('services');
+    final servicesSnapshot = await servicesCol.get();
+
+    List<Map<String, dynamic>> results = [];
+
+    for (var serviceDoc in servicesSnapshot.docs) {
+      final categoryUnit = serviceDoc['unit'] ?? '';
+      final itemsSnap = await serviceDoc.reference.collection('items').get();
+
+      for (var item in itemsSnap.docs) {
+        results.add({
+          "id": item.id,
+          "serviceId": serviceDoc.id,
+          "name": item['name'] ?? '',
+          "unit": categoryUnit.toLowerCase(),
+        });
+      }
+    }
+
+    serviceItems.value = results;
   }
 
   Future<void> fetchPackages() async {
@@ -27,6 +52,7 @@ class PackageController extends GetxController {
     required String description,
     required int validityPeriod,
     required bool accumulateValidity,
+    required List<String> serviceOptions,
   }) async {
     final docRef = _collection.doc(); // auto ID
 
@@ -39,7 +65,7 @@ class PackageController extends GetxController {
       "description": description,
       "validityPeriod": validityPeriod,
       "accumulateValidity": accumulateValidity,
-      "serviceOption": [],
+      "serviceOptions": serviceOptions,
       "image": "",
       "createdAt": FieldValue.serverTimestamp(),
       "updatedAt": FieldValue.serverTimestamp(),

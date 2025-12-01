@@ -6,6 +6,7 @@ import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
+import '../../features/orders/screens/create_order_screen.dart';
 import '../../features/profile/controllers/profile_controller.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/add_service_category_screen.dart';
@@ -59,6 +60,9 @@ class AppRouter {
 
       case '/settings/product/service/add-service':
         return _protectedOwner(() => AddServiceCategoryScreen());
+
+      case '/create-order':
+        return _protectedOwner(() => CreateOrderScreen());
 
       default:
         return _page(

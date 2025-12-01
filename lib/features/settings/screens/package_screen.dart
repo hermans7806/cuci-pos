@@ -9,6 +9,8 @@ class PackageScreen extends StatelessWidget {
 
   final PackageController controller = Get.put(PackageController());
 
+  final selectedServices = <String>[].obs;
+
   // Form controllers
   final nameCtrl = TextEditingController();
   final descCtrl = TextEditingController();
@@ -77,10 +79,117 @@ class PackageScreen extends StatelessWidget {
                           value: "satuan",
                           child: Text("Satuan"),
                         ),
+                        DropdownMenuItem(value: "meter", child: Text("Meter")),
                       ],
-                      onChanged: (v) => serviceType = v as String,
+                      onChanged: (v) {
+                        serviceType = v as String;
+                        controller.isServiceExpanded.value = false;
+                      },
                     ),
                     const SizedBox(height: 12),
+
+                    // MULTI SELECT LAYANAN
+                    Obx(() {
+                      final items = controller.serviceItems
+                          .where(
+                            (item) => item['unit'] == serviceType.toLowerCase(),
+                          )
+                          .toList();
+
+                      final isExpanded = controller.isServiceExpanded.value;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // LABEL
+                          const Text("Layanan"),
+                          const SizedBox(height: 6),
+
+                          // CONTAINER THAT LOOKS LIKE A DROPDOWN
+                          InkWell(
+                            onTap: () => controller.isServiceExpanded.toggle(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade400),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      selectedServices.isEmpty
+                                          ? "Pilih layanan..."
+                                          : "${selectedServices.length} layanan dipilih",
+                                      style: TextStyle(
+                                        color: selectedServices.isEmpty
+                                            ? Colors.grey.shade600
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    isExpanded
+                                        ? Icons.arrow_drop_up
+                                        : Icons.arrow_drop_down,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // EXPANDED CONTENT
+                          if (isExpanded)
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                                color: Colors.grey.shade50,
+                              ),
+                              child: items.isEmpty
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Text("No service items found."),
+                                    )
+                                  : Column(
+                                      children: items.map((item) {
+                                        final id = item['id'];
+                                        final name = item['name'];
+                                        final isSelected = selectedServices
+                                            .contains(id);
+
+                                        return CheckboxListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: Text(name),
+                                          value: isSelected,
+                                          onChanged: (v) {
+                                            if (v == true) {
+                                              selectedServices.add(id);
+                                            } else {
+                                              selectedServices.remove(id);
+                                            }
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                            ),
+
+                          const SizedBox(height: 12),
+                        ],
+                      );
+                    }),
 
                     TextField(
                       controller: priceCtrl,
@@ -177,6 +286,7 @@ class PackageScreen extends StatelessWidget {
       description: descCtrl.text,
       validityPeriod: int.tryParse(validityCtrl.text) ?? 0,
       accumulateValidity: accumulateValidity,
+      serviceOptions: selectedServices.toList(),
     );
 
     nameCtrl.clear();
@@ -184,6 +294,7 @@ class PackageScreen extends StatelessWidget {
     priceCtrl.clear();
     quotaCtrl.clear();
     validityCtrl.clear();
+    selectedServices.clear();
     serviceType = "kiloan";
     accumulateValidity = false;
   }

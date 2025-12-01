@@ -24,16 +24,16 @@ class ProductManagementScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _menuCard(
-            icon: Icons.local_offer,
-            title: "Layanan Paket",
-            onTap: () =>
-                Navigator.pushNamed(context, '/settings/product/paket'),
-          ),
-          _menuCard(
             icon: Icons.cleaning_services,
             title: "Layanan Reguler",
             onTap: () =>
                 Navigator.pushNamed(context, '/settings/product/service'),
+          ),
+          _menuCard(
+            icon: Icons.local_offer,
+            title: "Layanan Paket",
+            onTap: () =>
+                Navigator.pushNamed(context, '/settings/product/paket'),
           ),
           _menuCard(
             icon: Icons.discount,

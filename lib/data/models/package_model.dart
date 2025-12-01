@@ -4,7 +4,7 @@ class PackageModel {
   final String id;
   final String name;
   final String serviceType; // kiloan | satuan
-  final List<String> serviceOption; // list of service IDs
+  final List<String> serviceOptions; // list of service IDs
   final String image;
   final num price;
   final num quota;
@@ -16,7 +16,7 @@ class PackageModel {
     required this.id,
     required this.name,
     required this.serviceType,
-    required this.serviceOption,
+    required this.serviceOptions,
     required this.image,
     required this.price,
     required this.quota,
@@ -31,8 +31,8 @@ class PackageModel {
       id: doc.id,
       name: data['name'] ?? '',
       serviceType: data['serviceType'] ?? '',
-      serviceOption: data['serviceOption'] != null
-          ? List<String>.from(data['serviceOption'])
+      serviceOptions: data['serviceOptions'] != null
+          ? List<String>.from(data['serviceOptions'])
           : <String>[],
       image: data['image'] ?? '',
       price: data['price'] ?? 0,
@@ -47,7 +47,7 @@ class PackageModel {
     String? id,
     String? name,
     String? serviceType,
-    List<String>? serviceOption,
+    List<String>? serviceOptions,
     String? image,
     double? price,
     int? quota,
@@ -59,7 +59,7 @@ class PackageModel {
       id: id ?? this.id,
       name: name ?? this.name,
       serviceType: serviceType ?? this.serviceType,
-      serviceOption: serviceOption ?? this.serviceOption,
+      serviceOptions: serviceOptions ?? this.serviceOptions,
       image: image ?? this.image,
       price: price ?? this.price,
       quota: quota ?? this.quota,
@@ -73,7 +73,7 @@ class PackageModel {
     return {
       "name": name,
       "serviceType": serviceType,
-      "serviceOption": serviceOption,
+      "serviceOptions": serviceOptions,
       "image": image,
       "price": price,
       "quota": quota,
