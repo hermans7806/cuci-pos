@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../profile/controllers/profile_controller.dart';
 
@@ -50,10 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       }),
 
-                      const Text(
-                        'Selamat datang kembali di Fastclean Medit',
-                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
-                      ),
+                      _buildBranchText(),
                     ],
                   ),
                 ),
@@ -329,6 +327,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onTap: () {},
         trailing: const Icon(Icons.chevron_right),
       ),
+    );
+  }
+
+  Widget _buildBranchText() {
+    return FutureBuilder(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox();
+
+        final prefs = snapshot.data!;
+        final branchName = prefs.getString('activeBranchName') ?? "Cabang";
+
+        return Text(
+          'Selamat datang kembali di $branchName',
+          style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+        );
+      },
     );
   }
 }

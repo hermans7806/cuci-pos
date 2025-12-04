@@ -7,6 +7,7 @@ class ServiceCategoryModel {
   final String categoryName;
   final List<String> processTypes;
   final String unit;
+  final String branchId;
   final List<ServiceItemModel> items;
 
   ServiceCategoryModel({
@@ -14,6 +15,7 @@ class ServiceCategoryModel {
     required this.categoryName,
     required this.processTypes,
     required this.unit,
+    required this.branchId,
     required this.items,
   });
 
@@ -27,11 +29,17 @@ class ServiceCategoryModel {
       categoryName: data['name'] ?? '',
       processTypes: List<String>.from(data['types'] ?? []),
       unit: data['unit'] ?? 'Satuan', // default
+      branchId: data['branchId'] ?? '',
       items: items,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {"name": categoryName, "types": processTypes, "unit": unit};
+    return {
+      "name": categoryName,
+      "types": processTypes,
+      "unit": unit,
+      "branchId": branchId,
+    };
   }
 }

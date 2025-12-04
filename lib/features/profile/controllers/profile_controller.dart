@@ -28,6 +28,7 @@ class ProfileController extends GetxController {
   final RxString phoneNumber = ''.obs;
   final RxString photoURL = ''.obs;
   final RxString role = ''.obs;
+  final branches = <String>[].obs;
 
   final nameController = TextEditingController();
   final nicknameController = TextEditingController();
@@ -94,6 +95,13 @@ class ProfileController extends GetxController {
         } else {
           role.value = '';
         }
+
+        final rawBranches = data['branches'];
+        if (rawBranches is List) {
+          branches.value = rawBranches.map((e) => e.toString()).toList();
+        } else {
+          branches.value = [];
+        }
       } else {
         // fallback to auth profile
         displayName.value = user.value?.displayName ?? '';
@@ -105,6 +113,7 @@ class ProfileController extends GetxController {
         nicknameController.text = nickname.value;
         phoneController.text = phoneNumber.value;
         emailController.text = user.value?.email ?? '';
+        branches.value = [];
       }
     } catch (e) {
       // ignore or log

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cuci_pos/features/settings/controllers/service_controller.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/package_model.dart';
 
@@ -13,34 +15,27 @@ class PackageController extends GetxController {
   void onInit() {
     super.onInit();
     fetchPackages();
-    fetchServiceItems();
+    loadServiceItemsFromCategoryController();
   }
 
-  Future<void> fetchServiceItems() async {
-    final servicesCol = FirebaseFirestore.instance.collection('services');
-    final servicesSnapshot = await servicesCol.get();
+  Future<void> loadServiceItemsFromCategoryController() async {
+    final serviceCtrl = Get.find<ServiceController>();
 
-    List<Map<String, dynamic>> results = [];
-
-    for (var serviceDoc in servicesSnapshot.docs) {
-      final categoryUnit = serviceDoc['unit'] ?? '';
-      final itemsSnap = await serviceDoc.reference.collection('items').get();
-
-      for (var item in itemsSnap.docs) {
-        results.add({
-          "id": item.id,
-          "serviceId": serviceDoc.id,
-          "name": item['name'] ?? '',
-          "unit": categoryUnit.toLowerCase(),
-        });
-      }
-    }
-
-    serviceItems.value = results;
+    serviceItems.value = serviceCtrl.getFlatServiceItems();
   }
 
   Future<void> fetchPackages() async {
-    final snapshot = await _collection.get();
+    final prefs = await SharedPreferences.getInstance();
+    final activeBranchId = prefs.getString('activeBranchId') ?? '';
+
+    if (activeBranchId.isEmpty) {
+      packages.clear();
+      return;
+    }
+
+    final snapshot = await _collection
+        .where('branchId', isEqualTo: activeBranchId)
+        .get();
     packages.value = snapshot.docs.map((d) => PackageModel.fromDoc(d)).toList();
   }
 
@@ -54,6 +49,9 @@ class PackageController extends GetxController {
     required bool accumulateValidity,
     required List<String> serviceOptions,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final activeBranchId = prefs.getString('activeBranchId') ?? '';
+
     final docRef = _collection.doc(); // auto ID
 
     await docRef.set({
@@ -66,6 +64,7 @@ class PackageController extends GetxController {
       "validityPeriod": validityPeriod,
       "accumulateValidity": accumulateValidity,
       "serviceOptions": serviceOptions,
+      "branchId": activeBranchId,
       "image": "",
       "createdAt": FieldValue.serverTimestamp(),
       "updatedAt": FieldValue.serverTimestamp(),

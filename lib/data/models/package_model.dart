@@ -11,6 +11,7 @@ class PackageModel {
   final String description;
   final num validityPeriod;
   final bool accumulateValidity;
+  final String branchId;
 
   PackageModel({
     required this.id,
@@ -23,6 +24,7 @@ class PackageModel {
     required this.description,
     required this.validityPeriod,
     required this.accumulateValidity,
+    required this.branchId,
   });
 
   factory PackageModel.fromDoc(DocumentSnapshot doc) {
@@ -40,6 +42,7 @@ class PackageModel {
       description: data['description'] ?? '',
       validityPeriod: data['validityPeriod'] ?? 0,
       accumulateValidity: data['accumulateValidity'] ?? false,
+      branchId: data['branchId'] ?? "",
     );
   }
 
@@ -54,6 +57,7 @@ class PackageModel {
     String? description,
     int? validityPeriod,
     bool? accumulateValidity,
+    String? branchId,
   }) {
     return PackageModel(
       id: id ?? this.id,
@@ -66,6 +70,7 @@ class PackageModel {
       description: description ?? this.description,
       validityPeriod: validityPeriod ?? this.validityPeriod,
       accumulateValidity: accumulateValidity ?? this.accumulateValidity,
+      branchId: branchId ?? this.branchId,
     );
   }
 
@@ -80,6 +85,7 @@ class PackageModel {
       "description": description,
       "validityPeriod": validityPeriod,
       "accumulateValidity": accumulateValidity,
+      "branchId": branchId,
     };
   }
 }

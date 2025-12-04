@@ -1,4 +1,5 @@
 // lib/core/router/app_router.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -13,6 +14,7 @@ import '../../features/settings/screens/add_service_category_screen.dart';
 import '../../features/settings/screens/branch_screen.dart';
 import '../../features/settings/screens/package_screen.dart';
 import '../../features/settings/screens/product_management_screen.dart';
+import '../../features/settings/screens/promo_screen.dart';
 import '../../features/settings/screens/role_screen.dart';
 import '../../features/settings/screens/service_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
@@ -60,6 +62,9 @@ class AppRouter {
 
       case '/settings/product/service/add-service':
         return _protectedOwner(() => AddServiceCategoryScreen());
+
+      case '/settings/product/promos':
+        return _protectedOwner(() => PromoScreen());
 
       case '/create-order':
         return _protectedOwner(() => CreateOrderScreen());

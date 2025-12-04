@@ -1,6 +1,8 @@
+import 'package:cuci_pos/core/utils/top_notification.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/active_branch.dart';
 import '../../../data/models/customer_model.dart';
 import '../services/customer_service.dart';
 
@@ -24,6 +26,14 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     if (widget.prefilledName != null) {
       nameCtrl.text = widget.prefilledName!;
     }
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+    addressCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -73,20 +83,51 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   }
 
   Future<void> _saveCustomer() async {
-    if (nameCtrl.text.trim().isEmpty) {
-      Get.snackbar("Error", "Nama pelanggan wajib diisi");
+    final name = nameCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
+    final address = addressCtrl.text.trim();
+
+    if (name.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Nama pelanggan wajib diisi",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final nameLower = name.toLowerCase().trim();
+
+    final branchId = await BranchUtils.getActiveBranchId();
+
+    if (branchId == null || branchId.isEmpty) {
+      TopNotification.show(
+        title: "Error",
+        message: "Belum Ada Cabang Yang Dipilih.",
+        success: false,
+      );
       return;
     }
 
     final model = CustomerModel(
       id: null,
-      name: nameCtrl.text.trim(),
-      phone: phoneCtrl.text.trim(),
-      address: addressCtrl.text.trim(),
+      name: name,
+      phone: phone,
+      address: address,
+      nameLower: nameLower,
+      branch: branchId,
     );
 
-    final saved = await CustomerService.saveCustomer(model);
-
-    Get.back(result: saved);
+    try {
+      final saved = await CustomerService.saveCustomer(model);
+      // return saved model to caller (e.g. CreateOrderScreen)
+      Get.back(result: saved);
+    } catch (e) {
+      TopNotification.show(
+        title: "Error",
+        message: "Gagal Menyimpang Pelanggan.",
+        success: false,
+      );
+    }
   }
 }

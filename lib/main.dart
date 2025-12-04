@@ -2,8 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/router/app_router.dart';
+import 'features/auth/screens/branch_selection_screen.dart';
 import 'features/profile/controllers/profile_controller.dart';
 import 'firebase_options.dart';
 
@@ -23,11 +25,19 @@ Future<void> main() async {
     if (user != null) {
       // Load profile when logged in
       await profileCtrl.loadProfile();
+      final branches =
+          profileCtrl.branches; // assume you have branches in profile
+      final prefs = await SharedPreferences.getInstance();
+      final savedBranch = prefs.getString('activeBranchId');
 
-      // Navigate to dashboard if not already there
-      if (Get.currentRoute != '/dashboard') {
+      if (savedBranch != null && savedBranch.isNotEmpty) {
+        // Already checked in previously
         Get.offAllNamed('/dashboard');
+        return;
       }
+
+      // Need branch selection
+      Get.offAll(() => BranchSelectionScreen(userBranches: branches));
     } else {
       // Navigate to login if logged out
       if (Get.currentRoute != '/login') {

@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class PickerItem {
+  final String id;
   final String name;
   final String phone;
 
-  PickerItem({required this.name, required this.phone});
+  PickerItem({required this.id, required this.name, required this.phone});
 }
 
 class CustomerPickerModal extends StatefulWidget {

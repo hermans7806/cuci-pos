@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/selected_service_model.dart';
 
@@ -41,14 +42,28 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
   Map<String, List<ServiceItemModel>> itemsMap = {};
   List<String> expanded = [];
 
+  String? activeBranchId;
+
   @override
   void initState() {
     super.initState();
-    loadCategories();
+    loadBranch();
+  }
+
+  Future<void> loadBranch() async {
+    final prefs = await SharedPreferences.getInstance();
+    activeBranchId = prefs.getString('activeBranchId');
+    await loadCategories();
   }
 
   Future<void> loadCategories() async {
-    final snap = await _db.collection('services').get();
+    if (activeBranchId == null) return;
+
+    final snap = await _db
+        .collection('services')
+        .where('branchId', isEqualTo: activeBranchId)
+        .get();
+
     categories = snap.docs
         .map((d) => ServiceCategory(id: d.id, name: d['name']))
         .toList();

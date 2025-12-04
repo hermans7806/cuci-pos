@@ -39,7 +39,7 @@ class ProductManagementScreen extends StatelessWidget {
             icon: Icons.discount,
             title: "Setup Promo",
             onTap: () =>
-                Navigator.pushNamed(context, '/settings/product/promo'),
+                Navigator.pushNamed(context, '/settings/product/promos'),
           ),
           _menuCard(
             icon: Icons.spa,

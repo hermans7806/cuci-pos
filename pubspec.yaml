@@ -47,6 +47,7 @@ dependencies:
   get: ^4.7.2
   fast_contacts: ^5.0.1
   permission_handler: ^11.0.1
+  shared_preferences: ^2.5.3
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

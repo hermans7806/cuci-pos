@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/top_notification.dart';
 import '../../../data/models/service_category_model.dart';
@@ -41,8 +42,12 @@ class ServiceController extends GetxController {
     required String categoryName,
     required List<String> types,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final branchId = prefs.getString('activeBranchId') ?? '';
+
     if (categoryName.isEmpty) throw Exception("Category name required");
     if (types.isEmpty) throw Exception("Select at least one process type");
+    if (branchId.isEmpty) throw Exception("Branch ID missing");
 
     final catRef = _db.collection('services').doc();
     final batch = _db.batch();
@@ -51,6 +56,7 @@ class ServiceController extends GetxController {
       "name": categoryName,
       "types": types,
       "unit": categoryUnit.value,
+      "branchId": branchId,
       "createdAt": FieldValue.serverTimestamp(),
     });
 
@@ -71,6 +77,9 @@ class ServiceController extends GetxController {
     required List<String> types,
     required List<ServiceItemModel> items,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final branchId = prefs.getString('activeBranchId') ?? '';
+
     final catRef = _db.collection('services').doc(categoryId);
     final batch = _db.batch();
 
@@ -79,6 +88,7 @@ class ServiceController extends GetxController {
       "name": categoryName,
       "types": types,
       "unit": categoryUnit.value,
+      "branchId": branchId,
     });
 
     // Delete old items
@@ -103,7 +113,18 @@ class ServiceController extends GetxController {
   Future<void> fetchCategories() async {
     isLoading.value = true;
     try {
-      final snap = await _db.collection('services').get();
+      final prefs = await SharedPreferences.getInstance();
+      final activeBranchId = prefs.getString('activeBranchId') ?? '';
+
+      if (activeBranchId.isEmpty) {
+        categories.value = [];
+        return;
+      }
+
+      final snap = await _db
+          .collection('services')
+          .where('branchId', isEqualTo: activeBranchId)
+          .get();
 
       final list = <ServiceCategoryModel>[];
 
@@ -123,6 +144,7 @@ class ServiceController extends GetxController {
             categoryName: data['name'] ?? '',
             processTypes: List<String>.from(data['types'] ?? []),
             unit: data['unit'] ?? '',
+            branchId: data['branchId'] ?? '',
             items: items,
           ),
         );
@@ -132,6 +154,23 @@ class ServiceController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  List<Map<String, dynamic>> getFlatServiceItems() {
+    final flat = <Map<String, dynamic>>[];
+
+    for (final cat in categories) {
+      for (final item in cat.items) {
+        flat.add({
+          "id": item.id,
+          "name": item.name,
+          "unit": cat.unit.toLowerCase(),
+          "serviceId": cat.id,
+        });
+      }
+    }
+
+    return flat;
   }
 
   // Delete item
