@@ -2,13 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-class PickerItem {
-  final String id;
-  final String name;
-  final String phone;
-
-  PickerItem({required this.id, required this.name, required this.phone});
-}
+import '../../../data/models/order_picker_item.dart';
 
 class CustomerPickerModal extends StatefulWidget {
   final Future<List<PickerItem>> Function(int page, String? search) fetchItems;

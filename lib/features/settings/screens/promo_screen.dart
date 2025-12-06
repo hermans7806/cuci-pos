@@ -78,7 +78,7 @@ class PromoScreen extends StatelessWidget {
                       direction: DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
+                        padding: const EdgeInsets.only(right: 5),
                         color: Colors.red,
                         child: const Icon(
                           Icons.delete,
@@ -121,7 +121,7 @@ class PromoScreen extends StatelessWidget {
                         child: PromoCard(promo: p),
                       ),
                     );
-                  }).toList(),
+                  }),
 
                   const SizedBox(height: 24),
 

@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/top_notification.dart';
 import '../../../data/models/customer_model.dart';
+import '../../../data/models/order_picker_item.dart';
+import '../../../data/models/promo_model.dart';
 import '../../../data/models/selected_service_model.dart';
 import '../screens/customer_picker_modal.dart';
 import '../screens/service_picker_sheet.dart';
@@ -18,11 +20,16 @@ class OrderController extends GetxController {
   var customerName = "".obs;
   var customerPhone = "".obs;
   var customerId = "".obs;
+  var perfumeEnabled = false.obs;
 
+  // base total (before promo)
   var totalPrice = 0.0.obs;
   var notes = "".obs;
 
   final customerCtrl = TextEditingController();
+
+  /// selected promo (nullable)
+  final Rxn<PromoModel> selectedPromo = Rxn<PromoModel>();
 
   /// ⬇ List of services selected from ServicePickerSheet
   RxList<SelectedService> selectedServices = <SelectedService>[].obs;
@@ -38,7 +45,7 @@ class OrderController extends GetxController {
   void setSelectedCustomer(CustomerModel customer) {
     customerName.value = customer.name;
     customerPhone.value = customer.phone;
-    customerId.value = customer.id!;
+    customerId.value = customer.id ?? '';
 
     customerCtrl.text = "${customer.name} - ${customer.phone}";
     // clear any search results shown
@@ -56,12 +63,10 @@ class OrderController extends GetxController {
     return result.isGranted;
   }
 
-  // Firestore search using "keywords" array (Option B)
+  // Firestore search using "keywords" array
   Future<void> searchCustomers(String q) async {
-    // Debounce: cancel previous timer and schedule
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
-      // only search when q length >= 3
       final query = q.trim().toLowerCase();
       if (query.length < 3) {
         searchResults.clear();
@@ -74,7 +79,6 @@ class OrderController extends GetxController {
 
         final col = FirebaseFirestore.instance.collection('customers');
 
-        // Use arrayContains on keywords. Limit to 30 results.
         final snap = await col
             .where('keywords', arrayContains: query)
             .orderBy('nameLower', descending: false)
@@ -88,7 +92,6 @@ class OrderController extends GetxController {
           return PickerItem(id: d.id, name: name, phone: phone);
         }).toList();
 
-        // As an extra safeguard, also filter locally to ensure "contains"
         final filtered = results.where((r) {
           final ln = r.name.toLowerCase();
           return ln.contains(query) || r.phone.contains(query);
@@ -96,7 +99,6 @@ class OrderController extends GetxController {
 
         searchResults.assignAll(filtered);
       } catch (e) {
-        // ignore / show snackbar optionally
         debugPrint('searchCustomers error: $e');
         searchResults.clear();
       } finally {
@@ -109,7 +111,6 @@ class OrderController extends GetxController {
     int page,
     String? search,
   ) async {
-    // This method kept for CustomerPickerModal usage (paginated modal)
     final col = FirebaseFirestore.instance.collection('customers');
 
     Query query = col.orderBy('nameLower').limit(20);
@@ -127,7 +128,7 @@ class OrderController extends GetxController {
     final results = snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return PickerItem(
-        id: data['id'] ?? '',
+        id: d.id,
         name: data['name'] ?? '',
         phone: data['phone'] ?? '',
       );
@@ -281,6 +282,36 @@ class OrderController extends GetxController {
   }
 
   // ----------------------
+  // PROMO / DISCOUNT HELPERS
+  // ----------------------
+
+  double get totalBeforePromo => totalPrice.value;
+
+  double get discountAmount {
+    final promo = selectedPromo.value;
+    if (promo == null) return 0.0;
+
+    if (promo.type == 'percentage' || promo.type == 'percent') {
+      // treat discountRate as percentage (0-100)
+      return (totalBeforePromo * (promo.discountRate / 100.0));
+    } else {
+      // fixed amount
+      final amt = promo.discountRate;
+      // avoid negative totals
+      return amt > totalBeforePromo ? totalBeforePromo : amt;
+    }
+  }
+
+  double get totalAfterPromo =>
+      (totalBeforePromo - discountAmount).clamp(0.0, double.infinity);
+
+  void setPromo(PromoModel? promo) {
+    selectedPromo.value = promo;
+  }
+
+  void clearPromo() => selectedPromo.value = null;
+
+  // ----------------------
   // SUBMIT
   // ----------------------
 
@@ -304,7 +335,6 @@ class OrderController extends GetxController {
     }
 
     try {
-      // Load branch from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final branchId = prefs.getString('activeBranchId') ?? "";
       final branchName = prefs.getString('activeBranchName') ?? "";
@@ -321,39 +351,35 @@ class OrderController extends GetxController {
         };
       }).toList();
 
-      final totalBefore = totalPrice.value;
+      final promo = selectedPromo.value;
+      final promoId = promo?.id;
+      final promoRate = promo?.discountRate ?? 0.0;
+      final discount = discountAmount;
+      final totalBefore = totalBeforePromo;
+      final totalFinal = totalAfterPromo;
 
-      // prepare for promo integration
-      final promoId = null;
-      final discountRate = 0.0;
-      final discountAmount = totalBefore * discountRate;
-      final totalFinal = totalBefore - discountAmount;
-
-      final data = {
+      final orderData = {
         "customer": {
           "id": customerId.value,
           "name": customerName.value,
           "phone": customerPhone.value,
         },
-
         "services": servicesData,
+        "perfume": perfumeEnabled.value,
         "notes": notes.value,
-
         "branchId": branchId,
         "branchName": branchName,
-
         "promoId": promoId,
-        "discountRate": discountRate,
-
+        "promoRate": promoRate,
         "totalBeforeDiscount": totalBefore,
-        "totalDiscount": discountAmount,
+        "totalDiscount": discount,
         "totalFinal": totalFinal,
-
         "status": "pending",
         "createdAt": FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection("orders").add(data);
+      // Optionally use OrderModel to serialize — here we store as map
+      await FirebaseFirestore.instance.collection("orders").add(orderData);
 
       TopNotification.show(
         title: "Sukses",
@@ -365,9 +391,12 @@ class OrderController extends GetxController {
       selectedServices.clear();
       totalPrice.value = 0;
       notes.value = "";
+      perfumeEnabled.value = false;
       customerCtrl.clear();
       customerName.value = "";
       customerPhone.value = "";
+      customerId.value = "";
+      clearPromo();
 
       // close screen
       Get.back();
@@ -379,6 +408,10 @@ class OrderController extends GetxController {
       );
       debugPrint("submitOrder error: $e");
     }
+  }
+
+  void togglePerfume(bool value) {
+    perfumeEnabled.value = value;
   }
 
   @override

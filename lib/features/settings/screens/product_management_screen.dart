@@ -41,12 +41,6 @@ class ProductManagementScreen extends StatelessWidget {
             onTap: () =>
                 Navigator.pushNamed(context, '/settings/product/promos'),
           ),
-          _menuCard(
-            icon: Icons.spa,
-            title: "Setup Parfum",
-            onTap: () =>
-                Navigator.pushNamed(context, '/settings/product/parfum'),
-          ),
         ],
       ),
     );

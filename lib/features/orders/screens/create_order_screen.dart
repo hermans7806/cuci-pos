@@ -1,10 +1,13 @@
-// lib/features/orders/screens/create_order_screen.dart
+// FILE: create_order_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../data/models/promo_model.dart';
 import '../../../data/models/selected_service_model.dart';
 import '../controllers/order_controller.dart';
 import './add_customer_screen.dart';
+import 'promo_picker_sheet.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   const CreateOrderScreen({super.key});
@@ -15,14 +18,12 @@ class CreateOrderScreen extends StatefulWidget {
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final controller = Get.put(OrderController());
-
   final notesCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
-    // listen to text changes and perform live search after 3 chars
     controller.customerCtrl.addListener(() {
       final text = controller.customerCtrl.text;
       controller.customerName.value = text;
@@ -36,6 +37,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     super.dispose();
   }
 
+  Future<void> _openPromoPicker() async {
+    final prefs = await SharedPreferences.getInstance();
+    final branchId = prefs.getString('activeBranchId') ?? '';
+
+    final result = await showModalBottomSheet<PromoModel>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => PromoPickerSheet(branchId: branchId),
+    );
+
+    if (result != null) controller.setPromo(result);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,29 +59,87 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         child: ListView(
           children: [
             _customerField(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             _detailSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             _notesSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            _promoSection(),
+            const SizedBox(height: 12),
             _billingSection(),
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton(
-          onPressed: controller.isValidOrder ? controller.submitOrder : null,
-          child: const Padding(
-            padding: EdgeInsets.all(14),
-            child: Text("Buat Transaksi"),
+      bottomNavigationBar: Obx(() {
+        final total = controller.totalAfterPromo;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 6,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
-        ),
-      ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // TOTAL TAGIHAN
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total Tagihan",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    "Rp ${total.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // BUTTON
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: controller.submitOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "Buat Transaksi",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
-  // -------------------- Nama Pelanggan Field --------------------
+  // -------------------- CUSTOMER FIELD --------------------
   Widget _customerField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,10 +155,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 8),
-
-        // Live suggestions
         Obx(() {
           final results = controller.searchResults;
           final searching = controller.isSearching.value;
@@ -103,7 +172,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             child: Column(
               children: [
-                // header
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -131,7 +199,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ],
                   ),
                 ),
-
                 if (!searching && results.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(12),
@@ -140,7 +207,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                   ),
-
                 if (results.isNotEmpty)
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 220),
@@ -152,11 +218,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         final item = results[i];
                         return ListTile(
                           onTap: () {
-                            // choose customer
                             controller.customerCtrl.text =
                                 "${item.name} - ${item.phone}";
                             controller.customerName.value = item.name;
                             controller.customerPhone.value = item.phone;
+                            controller.customerId.value = item.id;
                             controller.searchResults.clear();
                             FocusScope.of(context).unfocus();
                           },
@@ -176,8 +242,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       },
                     ),
                   ),
-
-                // footer actions
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -189,7 +253,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         icon: const Icon(Icons.person_add),
                         label: const Text("Tambah Pelanggan Baru"),
                         onPressed: () {
-                          // go to add customer screen
                           Get.to(
                             () => AddCustomerScreen(
                               prefilledName: controller.customerCtrl.text,
@@ -201,7 +264,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       TextButton.icon(
                         icon: const Icon(Icons.phone_android),
                         label: const Text("Ambil dari Kontak HP"),
-                        onPressed: () => controller.pickFromPhoneContacts(),
+                        onPressed: controller.pickFromPhoneContacts,
                       ),
                     ],
                   ),
@@ -214,7 +277,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // -------------------- Detail Pesanan --------------------
+  // -------------------- DETAIL SECTION --------------------
   Widget _detailSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,68 +288,75 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         ),
         const SizedBox(height: 8),
         Obx(() {
-          if (controller.selectedServices.isEmpty) {
+          if (controller.selectedServices.isEmpty)
             return const SizedBox.shrink();
-          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ...controller.selectedServices.map((s) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
+            children: controller.selectedServices.map((s) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Service name + price
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
-                              const SizedBox(height: 4),
-                              Text("Rp ${s.price} • ${s.duration} hari"),
-                            ],
-                          ),
-                        ),
-
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 150),
-                              child: qtyEditor(s),
                             ),
-                          ),
+                            const SizedBox(height: 4),
+                            Text("Rp ${s.price} • ${s.duration} hari"),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+                      ),
 
-              const SizedBox(height: 12),
-            ],
+                      // Qty Editor – now safe
+                      IntrinsicWidth(child: qtyEditor(s)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           );
         }),
         TextButton(
           onPressed: controller.openAddServiceBottomSheet,
           child: const Text("+ Layanan", style: TextStyle(color: Colors.blue)),
         ),
+        const SizedBox(height: 8),
+
+        Obx(() {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Gunakan Parfum",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              Switch(
+                value: controller.perfumeEnabled.value,
+                onChanged: controller.togglePerfume,
+              ),
+            ],
+          );
+        }),
       ],
     );
   }
 
-  // -------------------- Notes --------------------
+  // -------------------- NOTES --------------------
   Widget _notesSection() {
     return TextField(
       controller: notesCtrl,
@@ -300,10 +370,96 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // -------------------- Billing --------------------
+  // -------------------- PROMO --------------------
+  Widget _promoSection() {
+    return Obx(() {
+      final promo = controller.selectedPromo.value;
+
+      if (promo == null) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.red.shade100,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.shade300),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.percent_outlined, color: Colors.red),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  "Pilih Promo",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: _openPromoPicker,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                ),
+                child: const Text(
+                  "Pilih Promo",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final label = promo.type == 'percentage'
+          ? "${promo.discountRate}%"
+          : "Rp ${promo.discountRate}";
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade300),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.percent_rounded, color: Colors.green),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    promo.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(label),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _openPromoPicker,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+              ),
+              child: const Text(
+                "Ganti Promo",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.clear, color: Colors.red),
+              onPressed: controller.clearPromo,
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // -------------------- BILLING --------------------
   Widget _billingSection() {
-    return Obx(
-      () => Card(
+    return Obx(() {
+      return Card(
         elevation: 0.5,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
@@ -316,24 +472,50 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text("Total Harga"),
                   Text(
-                    "Rp ${controller.totalPrice.value}",
+                    "Rp ${controller.totalBeforePromo.toStringAsFixed(0)}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
+
+              const SizedBox(height: 8),
+
+              if (controller.selectedPromo.value != null) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Diskon"),
+                    Text(
+                      "- Rp ${controller.discountAmount.toStringAsFixed(0)}",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total Setelah Diskon"),
+                    Text(
+                      "Rp ${controller.totalAfterPromo.toStringAsFixed(0)}",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
-  // --------------------- QTY Editor ----------------------
+  // -------------------- QTY EDITOR --------------------
   Widget qtyEditor(SelectedService s) {
     final controller = TextEditingController(text: s.qty.toString());
 
@@ -352,9 +534,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             textAlign: TextAlign.center,
             onChanged: (v) {
               final num = double.tryParse(v.replaceAll(',', '.'));
-              if (num != null) {
-                Get.find<OrderController>().updateQty(s, num);
-              }
+              if (num != null) Get.find<OrderController>().updateQty(s, num);
             },
           ),
         ),
@@ -366,7 +546,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // -------------------- Dialog for Address Book --------------------
+  // -------------------- CUSTOMER DIALOG --------------------
   void _openCustomerDialog() {
     showDialog(
       context: context,
@@ -403,7 +583,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // -------------------- Helpers --------------------
+  // -------------------- TEXT HIGHLIGHT --------------------
   Widget _highlightMatch(String text, String query) {
     if (query.trim().length < 1) return Text(text);
 
