@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/promo_model.dart';
 
 class PromoController extends GetxController {
+  final _db = FirebaseFirestore.instance;
   RxList<PromoModel> allPromos = <PromoModel>[].obs;
   RxString filter = "active".obs;
   RxString branchId = "".obs;
@@ -22,9 +23,12 @@ class PromoController extends GetxController {
   }
 
   Future<void> loadPromos() async {
-    if (branchId.isEmpty) return;
+    if (branchId.isEmpty) {
+      allPromos.value = [];
+      return;
+    }
 
-    final snap = await FirebaseFirestore.instance
+    final snap = await _db
         .collection("promos")
         .where("branchId", isEqualTo: branchId.value)
         .orderBy("start", descending: true)
@@ -53,6 +57,6 @@ class PromoController extends GetxController {
       filteredPromos.where((p) => p.isAutomatic == true).toList();
 
   Future<void> deletePromo(String id) async {
-    await FirebaseFirestore.instance.collection("promos").doc(id).delete();
+    await _db.collection("promos").doc(id).delete();
   }
 }

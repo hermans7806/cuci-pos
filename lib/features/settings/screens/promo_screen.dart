@@ -1,3 +1,4 @@
+// lib/features/promos/screens/promo_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,15 +23,13 @@ class PromoScreen extends StatelessWidget {
     }
     return Scaffold(
       appBar: AppBar(title: const Text("Promos")),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Get.to(() => const AddPromoScreen());
-          if (result == true) c.loadPromos(); // refresh after add
+          if (result == true) await c.loadPromos(); // refresh after add
         },
         child: const Icon(Icons.add),
       ),
-
       body: Obx(() {
         final pilihan = c.pilihanPromos;
         final otomatis = c.otomatisPromos;
@@ -56,10 +55,9 @@ class PromoScreen extends StatelessWidget {
                   ),
                   DropdownMenuItem(value: "all", child: Text("All Promos")),
                 ],
-                onChanged: (v) => c.filter.value = v!,
+                onChanged: (v) => c.filter.value = v ?? "active",
               ),
             ),
-
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(12),
@@ -69,16 +67,14 @@ class PromoScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-
                   if (pilihan.isEmpty) const Text("Tidak ada promo pilihan."),
-
                   ...pilihan.map((p) {
                     return Dismissible(
                       key: Key(p.id),
                       direction: DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 5),
+                        padding: const EdgeInsets.only(right: 20),
                         color: Colors.red,
                         child: const Icon(
                           Icons.delete,
@@ -109,19 +105,19 @@ class PromoScreen extends StatelessWidget {
                       },
                       onDismissed: (_) async {
                         await c.deletePromo(p.id);
-                        c.loadPromos();
+                        await c.loadPromos();
                       },
                       child: GestureDetector(
                         onTap: () async {
                           final result = await Get.to(
                             () => AddPromoScreen(promo: p),
                           );
-                          if (result == true) c.loadPromos();
+                          if (result == true) await c.loadPromos();
                         },
                         child: PromoCard(promo: p),
                       ),
                     );
-                  }),
+                  }).toList(),
 
                   const SizedBox(height: 24),
 
@@ -130,9 +126,7 @@ class PromoScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-
                   if (otomatis.isEmpty) const Text("Tidak ada promo otomatis."),
-
                   ...otomatis.map((p) {
                     return Dismissible(
                       key: Key(p.id),
@@ -170,14 +164,14 @@ class PromoScreen extends StatelessWidget {
                       },
                       onDismissed: (_) async {
                         await c.deletePromo(p.id);
-                        c.loadPromos();
+                        await c.loadPromos();
                       },
                       child: GestureDetector(
                         onTap: () async {
                           final result = await Get.to(
                             () => AddPromoScreen(promo: p),
                           );
-                          if (result == true) c.loadPromos();
+                          if (result == true) await c.loadPromos();
                         },
                         child: PromoCard(promo: p),
                       ),
