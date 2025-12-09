@@ -10,9 +10,9 @@ class PromoModel {
   final bool isActive;
   final bool isAutomatic;
   final String branchId;
-  final List<String> days; // ["mon","tue",...]
-  final String? conditionType; // "minQty" | "minTotal" or null
-  final num? conditionValue; // value for the condition
+  final List<String> days;
+  final String? conditionType;
+  final num? conditionValue;
   final bool useMaxDiscount;
   final num? maxDiscount;
   final List<Map<String, String>> eligibleServices;
@@ -35,6 +35,9 @@ class PromoModel {
     required this.eligibleServices,
   });
 
+  /// -----------------------------
+  /// fromJson (safe parser)
+  /// -----------------------------
   factory PromoModel.fromJson(Map<String, dynamic> json, String id) {
     DateTime parseTs(dynamic v) {
       if (v is Timestamp) return v.toDate();
@@ -42,16 +45,17 @@ class PromoModel {
       return DateTime.now();
     }
 
+    /// Parse eligibleServices (List<Map<String,String>>)
     final rawEligible = json['eligibleServices'];
     List<Map<String, String>> eligible = [];
+
     if (rawEligible is List) {
       for (var el in rawEligible) {
         if (el is Map) {
-          final sId = (el['serviceId'] ?? '').toString();
-          final iId = (el['itemId'] ?? '').toString();
-          if (sId.isNotEmpty && iId.isNotEmpty) {
-            eligible.add({'serviceId': sId, 'itemId': iId});
-          }
+          eligible.add({
+            'serviceId': (el['serviceId'] ?? '').toString(),
+            'itemId': (el['itemId'] ?? '').toString(),
+          });
         }
       }
     }
@@ -67,11 +71,9 @@ class PromoModel {
       isAutomatic: json['isAutomatic'] ?? false,
       branchId: json['branchId'] ?? "",
       days: json['days'] != null
-          ? List<String>.from(json['days'] as List<dynamic>)
+          ? List<String>.from(json['days'] as List)
           : <String>[],
-      conditionType: json['conditionType'] != null
-          ? json['conditionType'] as String
-          : null,
+      conditionType: json['conditionType'],
       conditionValue: json['conditionValue'],
       useMaxDiscount: json['useMaxDiscount'] ?? false,
       maxDiscount: json['maxDiscount'],
@@ -79,6 +81,9 @@ class PromoModel {
     );
   }
 
+  /// -----------------------------
+  /// Firestore encoder
+  /// -----------------------------
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -97,5 +102,50 @@ class PromoModel {
       'eligibleServices': eligibleServices,
       'updatedAt': FieldValue.serverTimestamp(),
     };
+  }
+
+  /// -----------------------------
+  /// fromFirestore (the FIXED version!)
+  /// -----------------------------
+  factory PromoModel.fromFirestore(DocumentSnapshot doc) {
+    final json = doc.data() as Map<String, dynamic>;
+
+    /// Parse eligibleServices correctly
+    final rawEligible = json['eligibleServices'];
+    List<Map<String, String>> eligible = [];
+
+    if (rawEligible is List) {
+      for (var el in rawEligible) {
+        if (el is Map) {
+          eligible.add({
+            'serviceId': (el['serviceId'] ?? '').toString(),
+            'itemId': (el['itemId'] ?? '').toString(),
+          });
+        }
+      }
+    }
+
+    /// Safe days list
+    final parsedDays = json['days'] != null
+        ? List<String>.from(json['days'] as List)
+        : <String>[];
+
+    return PromoModel(
+      id: doc.id,
+      title: json['title'] ?? '',
+      type: json['type'] ?? 'percentage',
+      discountRate: (json['discountRate'] ?? 0).toDouble(),
+      start: (json['start'] as Timestamp).toDate(),
+      end: (json['end'] as Timestamp).toDate(),
+      isAutomatic: json['isAutomatic'] ?? false,
+      isActive: json['isActive'] ?? true,
+      branchId: json['branchId'] ?? '',
+      days: parsedDays,
+      conditionType: json['conditionType'],
+      conditionValue: json['conditionValue'],
+      useMaxDiscount: json['useMaxDiscount'] ?? false,
+      maxDiscount: json['maxDiscount'],
+      eligibleServices: eligible,
+    );
   }
 }

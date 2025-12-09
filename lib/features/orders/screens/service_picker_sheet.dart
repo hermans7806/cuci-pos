@@ -185,6 +185,7 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
                                     onPressed: () {
                                       final selected = SelectedService(
                                         id: item.id,
+                                        serviceId: cat.id,
                                         name: item.name,
                                         price: item.price,
                                         duration: item.duration,

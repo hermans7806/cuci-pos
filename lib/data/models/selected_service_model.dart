@@ -1,5 +1,6 @@
 class SelectedService {
   final String id;
+  final String serviceId;
   final String name;
   final int price;
   final int duration;
@@ -7,6 +8,7 @@ class SelectedService {
 
   SelectedService({
     required this.id,
+    required this.serviceId,
     required this.name,
     required this.price,
     required this.duration,

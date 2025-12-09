@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_contacts/fast_contacts.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -242,6 +243,7 @@ class OrderController extends GetxController {
 
     _recalculateTotal();
     selectedServices.refresh();
+    applyAutomaticPromo();
   }
 
   void updateQty(SelectedService s, double newQty) {
@@ -252,12 +254,14 @@ class OrderController extends GetxController {
     }
     _recalculateTotal();
     selectedServices.refresh();
+    applyAutomaticPromo();
   }
 
   void increaseQty(SelectedService s) {
     s.qty++;
     _recalculateTotal();
     selectedServices.refresh();
+    applyAutomaticPromo();
   }
 
   void decreaseQty(SelectedService s) {
@@ -267,6 +271,7 @@ class OrderController extends GetxController {
     }
     _recalculateTotal();
     selectedServices.refresh();
+    applyAutomaticPromo();
   }
 
   void removeService(SelectedService s) {
@@ -291,15 +296,23 @@ class OrderController extends GetxController {
     final promo = selectedPromo.value;
     if (promo == null) return 0.0;
 
+    final eligibleSubtotal = calculateEligibleSubtotal(promo);
+
+    if (eligibleSubtotal <= 0) return 0.0;
+
     if (promo.type == 'percentage' || promo.type == 'percent') {
-      // treat discountRate as percentage (0-100)
-      return (totalBeforePromo * (promo.discountRate / 100.0));
-    } else {
-      // fixed amount
-      final amt = promo.discountRate;
-      // avoid negative totals
-      return amt > totalBeforePromo ? totalBeforePromo : amt;
+      double disc = eligibleSubtotal * (promo.discountRate / 100);
+
+      if (promo.useMaxDiscount == true && promo.maxDiscount != null) {
+        disc = disc.clamp(0, promo.maxDiscount!).toDouble();
+      }
+      return disc;
     }
+
+    // fixed amount
+    return promo.discountRate > eligibleSubtotal
+        ? eligibleSubtotal
+        : promo.discountRate;
   }
 
   double get totalAfterPromo =>
@@ -310,6 +323,125 @@ class OrderController extends GetxController {
   }
 
   void clearPromo() => selectedPromo.value = null;
+
+  bool selectedServicesMatchPromo(
+    Map<String, dynamic> promoData,
+    List<SelectedService> selectedServices,
+  ) {
+    final rawEligible = promoData['eligibleServices'];
+    if (rawEligible == null) return false;
+
+    final eligible = List<Map<String, dynamic>>.from(rawEligible);
+
+    for (final sel in selectedServices) {
+      for (final e in eligible) {
+        if (sel.id == e['itemId'] && sel.serviceId == e['serviceId']) {
+          return true; // at least one item matches
+        }
+      }
+    }
+
+    return false;
+  }
+
+  double calculateEligibleSubtotal(PromoModel promo) {
+    if (promo.eligibleServices == null || promo.eligibleServices!.isEmpty) {
+      return totalBeforePromo; // fallback
+    }
+
+    double sum = 0;
+
+    for (final sel in selectedServices) {
+      for (final e in promo.eligibleServices!) {
+        final promoItemId = e['itemId'];
+        final promoServiceId = e['serviceId'];
+        if (sel.id == promoItemId && sel.serviceId == promoServiceId) {
+          sum += sel.price * sel.qty;
+        }
+      }
+    }
+
+    return sum;
+  }
+
+  Future<void> applyAutomaticPromo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final activeBranchId = prefs.getString('activeBranchId') ?? '';
+      if (activeBranchId.isEmpty) return;
+
+      final today = DateTime.now();
+      final todayWeekday = DateFormat(
+        'EEE',
+      ).format(today).toLowerCase(); // 1=Mon ... 7=Sun
+
+      // 1. Fetch automatic promos for this branch
+      final snap = await FirebaseFirestore.instance
+          .collection('promos')
+          .where('branchId', isEqualTo: activeBranchId)
+          .where('isAutomatic', isEqualTo: true)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      if (snap.docs.isEmpty) {
+        debugPrint("No automatic promos available.");
+        clearPromo();
+        update();
+        return;
+      }
+
+      PromoModel? foundPromo;
+      bool appliedSomething = false;
+
+      for (var doc in snap.docs) {
+        final data = doc.data();
+        final start = (data['start'] as Timestamp).toDate();
+        final end = (data['end'] as Timestamp).toDate();
+
+        // 2. Date range check
+        if (today.isBefore(start) || today.isAfter(end)) continue;
+
+        // 3. Day check
+        final rawDays = data['days'];
+        final List<String> days = rawDays == null
+            ? []
+            : List<String>.from(rawDays.map((e) => e.toString().toLowerCase()));
+        if (days.isNotEmpty && !days.contains(todayWeekday)) {
+          continue;
+        }
+
+        // 4. Eligibility check by serviceId + itemId
+        final selectedIds = selectedServices.map((e) => e.id).toList();
+        final matches = selectedServicesMatchPromo(
+          data,
+          selectedServices.toList(),
+        );
+
+        if (!matches) continue;
+
+        // PASS ALL CONDITIONS → promo eligible
+        foundPromo = PromoModel.fromFirestore(doc);
+
+        setPromo(foundPromo); // <— proper UI + total update
+        _recalculateTotal(); // refresh numbers
+        update(); // refresh GetX UI
+
+        appliedSomething = true;
+        break;
+      }
+
+      // If no promos matched, clear current automatic promo
+      if (!appliedSomething) {
+        debugPrint("❌ No automatic promo applicable → removing promo");
+        clearPromo();
+        _recalculateTotal();
+        update();
+      }
+    } catch (e, st) {
+      debugPrint("❌ ERROR IN applyAutomaticPromo → $e");
+      debugPrint(st.toString());
+    }
+  }
 
   // ----------------------
   // SUBMIT
