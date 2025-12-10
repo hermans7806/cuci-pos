@@ -26,4 +26,14 @@ class CashboxModel {
     'isActive': isActive,
     'createdAt': DateTime.now(),
   };
+
+  factory CashboxModel.fromFirestore(doc) {
+    final d = doc.data();
+    return CashboxModel(
+      id: doc.id,
+      name: d["name"] ?? "",
+      branchId: d["branchId"] ?? "",
+      isActive: d["isActive"] ?? false,
+    );
+  }
 }

@@ -27,4 +27,14 @@ class FinancialCategory {
       branchId: d['branchId'] ?? '',
     );
   }
+
+  factory FinancialCategory.fromFirestore(doc) {
+    final d = doc.data();
+    return FinancialCategory(
+      id: doc.id,
+      name: d["name"] ?? "",
+      category: d["category"] ?? "",
+      branchId: d['branchId'] ?? "",
+    );
+  }
 }
