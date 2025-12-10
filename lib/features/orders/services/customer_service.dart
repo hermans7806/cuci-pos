@@ -8,7 +8,7 @@ class CustomerService {
   static Future<CustomerModel> saveCustomer(CustomerModel model) async {
     final data = model.toMap(); // includes keywords
     final doc = await col.add(data);
-    model.id = doc.id;
+
     return model;
   }
 

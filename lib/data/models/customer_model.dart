@@ -1,6 +1,8 @@
 // lib/data/models/customer_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class CustomerModel {
-  String? id;
+  final String id;
   final String name;
   final String phone;
   final String address;
@@ -8,13 +10,33 @@ class CustomerModel {
   final String branch;
 
   CustomerModel({
-    this.id,
+    required this.id,
     required this.name,
     required this.phone,
     required this.address,
     required this.nameLower,
     required this.branch,
   });
+
+  /// Auto-ID constructor: generates ID using Firestore
+  factory CustomerModel.createNew({
+    required String name,
+    required String phone,
+    required String address,
+    required String branch,
+    required String nameLower,
+  }) {
+    final newId = FirebaseFirestore.instance.collection("customers").doc().id;
+
+    return CustomerModel(
+      id: newId,
+      name: name,
+      phone: phone,
+      address: address,
+      nameLower: nameLower,
+      branch: branch,
+    );
+  }
 
   /// To keep the number of keywords reasonable we:
   ///  - lowercase and trim

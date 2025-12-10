@@ -109,8 +109,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       return;
     }
 
-    final model = CustomerModel(
-      id: null,
+    final model = CustomerModel.createNew(
       name: name,
       phone: phone,
       address: address,

@@ -1,5 +1,6 @@
 // lib/core/router/app_router.dart
 
+import 'package:cuci_pos/features/settings/screens/my_customers_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -65,6 +66,9 @@ class AppRouter {
 
       case '/settings/product/promos':
         return _protectedOwner(() => PromoScreen());
+
+      case '/settings/customers':
+        return _protectedOwner(() => MyCustomersScreen());
 
       case '/create-order':
         return _protectedOwner(() => CreateOrderScreen());

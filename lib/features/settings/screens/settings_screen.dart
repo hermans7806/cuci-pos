@@ -42,6 +42,11 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/settings/product'),
             ),
+            ListTile(
+              title: const Text("My Customers"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, '/settings/customers'),
+            ),
           ],
         ),
       );
