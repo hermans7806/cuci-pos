@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../profile/controllers/profile_controller.dart';
 import '../controllers/customer_controller.dart';
 import 'customer_form_screen.dart';
 
@@ -12,6 +13,15 @@ class MyCustomersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(CustomerController());
+    final profileCtrl = Get.find<ProfileController>();
+
+    // Owner-only guard
+    if (profileCtrl.role.value != 'owner') {
+      Future.microtask(
+        () => Navigator.pushReplacementNamed(context, '/dashboard'),
+      );
+      return const SizedBox.shrink();
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Customers')),
