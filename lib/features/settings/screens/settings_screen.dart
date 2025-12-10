@@ -47,6 +47,11 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/settings/customers'),
             ),
+            ListTile(
+              title: const Text("Finances Management"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, '/settings/finances'),
+            ),
           ],
         ),
       );

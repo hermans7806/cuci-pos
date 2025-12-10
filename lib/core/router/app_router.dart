@@ -1,6 +1,4 @@
 // lib/core/router/app_router.dart
-
-import 'package:cuci_pos/features/settings/screens/my_customers_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -13,6 +11,9 @@ import '../../features/profile/controllers/profile_controller.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/add_service_category_screen.dart';
 import '../../features/settings/screens/branch_screen.dart';
+import '../../features/settings/screens/cashbox_list_screen.dart';
+import '../../features/settings/screens/finances_management_screen.dart';
+import '../../features/settings/screens/my_customers_screen.dart';
 import '../../features/settings/screens/package_screen.dart';
 import '../../features/settings/screens/product_management_screen.dart';
 import '../../features/settings/screens/promo_screen.dart';
@@ -69,6 +70,12 @@ class AppRouter {
 
       case '/settings/customers':
         return _protectedOwner(() => MyCustomersScreen());
+
+      case '/settings/finances':
+        return _protectedOwner(() => FinancesManagementScreen());
+
+      case '/settings/finances/cashbox':
+        return _protectedOwner(() => CashboxListScreen());
 
       case '/create-order':
         return _protectedOwner(() => CreateOrderScreen());

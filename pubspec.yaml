@@ -83,6 +83,12 @@ flutter:
     - lib/assets/fast_clean4-02.png
     - lib/assets/google_logo.png
     - lib/assets/default_avatar.png
+    - lib/assets/bca_logo.png
+    - lib/assets/bni_logo.png
+    - lib/assets/bri_logo.png
+    - lib/assets/mandiri_logo.png
+    - lib/assets/qris_logo.png
+    - lib/assets/rupiah_logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
