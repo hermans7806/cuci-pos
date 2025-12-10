@@ -12,6 +12,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/add_service_category_screen.dart';
 import '../../features/settings/screens/branch_screen.dart';
 import '../../features/settings/screens/cashbox_list_screen.dart';
+import '../../features/settings/screens/fin_category_list_screen.dart';
 import '../../features/settings/screens/finances_management_screen.dart';
 import '../../features/settings/screens/my_customers_screen.dart';
 import '../../features/settings/screens/package_screen.dart';
@@ -76,6 +77,9 @@ class AppRouter {
 
       case '/settings/finances/cashbox':
         return _protectedOwner(() => CashboxListScreen());
+
+      case '/settings/finances/fin-category':
+        return _protectedOwner(() => FinCategoryListScreen());
 
       case '/create-order':
         return _protectedOwner(() => CreateOrderScreen());
