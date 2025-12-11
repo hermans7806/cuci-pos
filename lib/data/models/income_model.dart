@@ -32,4 +32,28 @@ class IncomeModel {
       branchId: data['branchId'] ?? '',
     );
   }
+
+  factory IncomeModel.fromMap(String id, Map<String, dynamic> data) {
+    return IncomeModel(
+      id: id,
+      date: (data["date"] as Timestamp).toDate(),
+      cashbox: data["cashbox"],
+      financialCategory: data["financialCategory"],
+      nominal: (data["nominal"] ?? 0).toDouble(),
+      description: data["description"] ?? "",
+      branchId: data['branchId'] ?? '',
+    );
+  }
+
+  IncomeModel copyWith({String? cashbox, String? financialCategory}) {
+    return IncomeModel(
+      id: id,
+      date: date,
+      cashbox: cashbox ?? this.cashbox,
+      financialCategory: financialCategory ?? this.financialCategory,
+      nominal: nominal,
+      description: description,
+      branchId: branchId,
+    );
+  }
 }

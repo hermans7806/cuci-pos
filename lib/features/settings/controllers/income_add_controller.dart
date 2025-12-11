@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cuci_pos/core/utils/top_notification.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -81,11 +82,11 @@ class IncomeAddController extends GetxController {
     });
 
     isLoading.value = false;
-    Get.back(); // return to list screen
-    Get.snackbar(
-      "Sukses",
-      "Pendapatan berhasil ditambahkan",
-      snackPosition: SnackPosition.BOTTOM,
+    Get.back(result: true); // return to list screen
+    TopNotification.show(
+      title: 'Sukses',
+      message: 'Pendapatan berhasil ditambahkan.',
+      success: true,
     );
   }
 }

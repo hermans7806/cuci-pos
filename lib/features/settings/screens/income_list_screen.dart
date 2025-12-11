@@ -13,9 +13,12 @@ class IncomeListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("Pendapatan Hari Ini")),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/settings/finances/income/add');
-          c.loadIncomes();
+        onPressed: () async {
+          final result = await Navigator.pushNamed(
+            context,
+            '/settings/finances/income/add',
+          );
+          if (result == true) c.loadIncomes();
         },
         child: const Icon(Icons.add),
       ),
@@ -148,12 +151,14 @@ class IncomeListScreen extends StatelessWidget {
       itemBuilder: (_, i) {
         final inc = c.incomes[i];
 
+        final cashboxName = inc.cashbox ?? "Cashbox Tidak Ditemukan";
+        final categoryName =
+            inc.financialCategory ?? "Kategori Tidak Ditemukan";
+
         return Card(
           child: ListTile(
             title: Text("Rp ${inc.nominal.toStringAsFixed(0)}"),
-            subtitle: Text(
-              "${inc.financialCategory} · ${inc.cashbox}\n${inc.description}",
-            ),
+            subtitle: Text("$categoryName · $cashboxName\n${inc.description}"),
             isThreeLine: true,
           ),
         );
