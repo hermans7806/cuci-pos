@@ -7,96 +7,96 @@ import '../../../data/models/income_model.dart';
 class IncomeController extends GetxController {
   final incomes = <IncomeModel>[].obs;
 
-  final cashboxes = <String>[].obs; // cashbox display names
-  final cashboxIdMap = <String, String>{}.obs; // id → name
+  final cashboxes = <String>[]; // display names for filter dropdown
+  final cashboxIdMap = <String, String>{}; // id → name (plain map, not .obs)
 
-  final categories = <String>[].obs; // category display names
-  final categoryIdMap = <String, String>{}.obs; // id → name
+  final categories = <String>[]; // display names for filter dropdown
+  final categoryIdMap = <String, String>{}; // id → name
 
-  final selectedCashbox = "Semua".obs;
-  final selectedCategory = "Semua".obs;
+  final selectedCashbox = 'Semua'.obs;
+  final selectedCategory = 'Semua'.obs;
 
   final startDate = DateTime.now().obs;
   final endDate = DateTime.now().obs;
 
+  final isLoading = true.obs;
+
   late String branchId;
 
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+
   @override
-  Future<void> onInit() async {
+  void onInit() {
     super.onInit();
-    await _loadBranchId();
-    await loadCashboxes();
-    await loadCategories();
-    await loadIncomes();
+    // onInit MUST be synchronous in GetX — async work goes in a helper.
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      await _loadBranchId();
+      await loadCashboxes();
+      await loadCategories();
+      await loadIncomes();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> _loadBranchId() async {
     final prefs = await SharedPreferences.getInstance();
-    branchId = prefs.getString("activeBranchId") ?? "";
+    branchId = prefs.getString('activeBranchId') ?? '';
   }
 
-  // --------------------------
-  // LOAD CASHBOXES
-  // --------------------------
+  // ── Loaders ───────────────────────────────────────────────────────────────
+
   Future<void> loadCashboxes() async {
     final qs = await FirebaseFirestore.instance
-        .collection("cashboxes")
-        .where("isActive", isEqualTo: true)
-        .where("branchId", isEqualTo: branchId)
+        .collection('cashboxes')
+        .where('isActive', isEqualTo: true)
+        .where('branchId', isEqualTo: branchId)
         .get();
 
     cashboxes.clear();
     cashboxIdMap.clear();
+    cashboxes.add('Semua');
 
-    cashboxes.add("Semua");
-
-    for (var d in qs.docs) {
-      final name = d["name"];
-      final id = d.id;
-
+    for (final d in qs.docs) {
+      final name = d['name'] as String;
       cashboxes.add(name);
-      cashboxIdMap[id] = name;
+      cashboxIdMap[d.id] = name;
     }
   }
 
-  // --------------------------
-  // LOAD FINANCIAL CATEGORIES
-  // --------------------------
   Future<void> loadCategories() async {
     final qs = await FirebaseFirestore.instance
-        .collection("financial_categories")
-        .where("branchId", isEqualTo: branchId)
-        .where("category", isEqualTo: "pendapatan")
+        .collection('financial_categories')
+        .where('branchId', isEqualTo: branchId)
+        .where('category', isEqualTo: 'pendapatan')
         .get();
 
     categories.clear();
     categoryIdMap.clear();
+    categories.add('Semua');
 
-    categories.add("Semua");
-
-    for (var d in qs.docs) {
-      final name = d["name"];
-      final id = d.id;
-
+    for (final d in qs.docs) {
+      final name = d['name'] as String;
       categories.add(name);
-      categoryIdMap[id] = name;
+      categoryIdMap[d.id] = name;
     }
   }
 
-  // --------------------------
-  // LOAD INCOMES (RAW)
-  // --------------------------
   Future<void> loadIncomes() async {
     final today = DateTime.now();
     final start = DateTime(today.year, today.month, today.day);
-    final end = DateTime(today.year, today.month, today.day, 23, 59);
+    final end = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
     final qs = await FirebaseFirestore.instance
-        .collection("incomes")
-        .where("branchId", isEqualTo: branchId)
-        .where("date", isGreaterThanOrEqualTo: start)
-        .where("date", isLessThanOrEqualTo: end)
-        .orderBy("date", descending: true)
+        .collection('incomes')
+        .where('branchId', isEqualTo: branchId)
+        .where('date', isGreaterThanOrEqualTo: start)
+        .where('date', isLessThanOrEqualTo: end)
+        .orderBy('date', descending: true)
         .get();
 
     incomes.value = qs.docs
@@ -106,50 +106,45 @@ class IncomeController extends GetxController {
     _applyNameMapping();
   }
 
-  // --------------------------
-  // FILTER LOGIC
-  // --------------------------
   Future<void> applyFilters() async {
-    final qs = FirebaseFirestore.instance
-        .collection("incomes")
-        .where("branchId", isEqualTo: branchId)
-        .where(
-          "date",
-          isGreaterThanOrEqualTo: DateTime(
-            startDate.value.year,
-            startDate.value.month,
-            startDate.value.day,
-          ),
-        )
-        .where(
-          "date",
-          isLessThanOrEqualTo: DateTime(
-            endDate.value.year,
-            endDate.value.month,
-            endDate.value.day,
-            23,
-            59,
-          ),
-        );
+    final start = DateTime(
+      startDate.value.year,
+      startDate.value.month,
+      startDate.value.day,
+    );
+    final end = DateTime(
+      endDate.value.year,
+      endDate.value.month,
+      endDate.value.day,
+      23,
+      59,
+      59,
+    );
 
-    final result = await qs.orderBy("date", descending: true).get();
+    final result = await FirebaseFirestore.instance
+        .collection('incomes')
+        .where('branchId', isEqualTo: branchId)
+        .where('date', isGreaterThanOrEqualTo: start)
+        .where('date', isLessThanOrEqualTo: end)
+        .orderBy('date', descending: true)
+        .get();
 
     var list = result.docs
         .map((d) => IncomeModel.fromMap(d.id, d.data()))
         .toList();
 
-    // Filter Cashbox by NAME not ID
-    if (selectedCashbox.value != "Semua") {
+    // MUST use rawCashboxId / rawCategoryId — the cashbox / financialCategory
+    // fields may already be display names after _applyNameMapping().
+    if (selectedCashbox.value != 'Semua') {
       list = list
-          .where((e) => cashboxIdMap[e.cashbox] == selectedCashbox.value)
+          .where((e) => cashboxIdMap[e.rawCashboxId] == selectedCashbox.value)
           .toList();
     }
 
-    // Filter Category by NAME not ID
-    if (selectedCategory.value != "Semua") {
+    if (selectedCategory.value != 'Semua') {
       list = list
           .where(
-            (e) => categoryIdMap[e.financialCategory] == selectedCategory.value,
+            (e) => categoryIdMap[e.rawCategoryId] == selectedCategory.value,
           )
           .toList();
     }
@@ -158,22 +153,20 @@ class IncomeController extends GetxController {
     _applyNameMapping();
   }
 
-  // --------------------------
-  // MAP IDs into readable names
-  // --------------------------
+  /// Overwrites display fields with human-readable names.
+  /// Raw IDs are preserved in rawCashboxId / rawCategoryId on the model.
   void _applyNameMapping() {
-    for (var i = 0; i < incomes.length; i++) {
-      final inc = incomes[i];
-
-      final readableCashbox = cashboxIdMap[inc.cashbox] ?? inc.cashbox;
-
-      final readableCategory =
-          categoryIdMap[inc.financialCategory] ?? inc.financialCategory;
-
-      incomes[i] = inc.copyWith(
-        cashbox: readableCashbox,
-        financialCategory: readableCategory,
+    incomes.value = incomes.map((inc) {
+      return inc.copyWith(
+        cashbox: cashboxIdMap[inc.rawCashboxId] ?? 'Cashbox Tidak Ditemukan',
+        financialCategory:
+            categoryIdMap[inc.rawCategoryId] ?? 'Kategori Tidak Ditemukan',
       );
-    }
+    }).toList();
+  }
+
+  Future<void> deleteIncome(String id) async {
+    await FirebaseFirestore.instance.collection('incomes').doc(id).delete();
+    await loadIncomes();
   }
 }

@@ -37,23 +37,15 @@ class FinancesManagementScreen extends StatelessWidget {
           ),
           _menuCard(
             icon: Icons.account_balance_wallet,
-            title: "Tambah Pendapatan",
+            title: "Atur Pendapatan",
             onTap: () =>
                 Navigator.pushNamed(context, '/settings/finances/income'),
           ),
           _menuCard(
             icon: Icons.payment,
-            title: "Tambah Pengeluaran",
+            title: "Atur Pengeluaran",
             onTap: () =>
                 Navigator.pushNamed(context, '/settings/finances/expense'),
-          ),
-          _menuCard(
-            icon: Icons.monetization_on,
-            title: "Koreksi Keuangan",
-            onTap: () => Navigator.pushNamed(
-              context,
-              '/settings/finances/fin-correction',
-            ),
           ),
           _menuCard(
             icon: Icons.wallet_travel,
