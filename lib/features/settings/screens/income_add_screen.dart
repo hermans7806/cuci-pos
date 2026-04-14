@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../data/models/income_model.dart';
 import '../controllers/income_add_controller.dart';
 
 class IncomeAddScreen extends StatefulWidget {
-  const IncomeAddScreen({super.key});
+  final IncomeModel? income;
+
+  const IncomeAddScreen({super.key, this.income});
 
   @override
   State<IncomeAddScreen> createState() => _IncomeAddScreenState();
@@ -16,16 +19,13 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
   @override
   void initState() {
     super.initState();
-    // Safely delete any stale instance, then register a fresh one.
-    // Doing this in initState (not build) ensures it runs exactly once
-    // and never during a reactive rebuild triggered by Obx.
     Get.delete<IncomeAddController>(force: true);
-    c = Get.put(IncomeAddController());
+    // Pass widget.income directly — no Get.arguments, no routing magic.
+    c = Get.put(IncomeAddController(editingModel: widget.income));
   }
 
   @override
   void dispose() {
-    // Clean up when the widget is truly removed from the tree.
     Get.delete<IncomeAddController>(force: true);
     super.dispose();
   }
@@ -46,7 +46,7 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Date picker
+              // ── Date picker ────────────────────────────────────────────
               Obx(
                 () => GestureDetector(
                   onTap: () async {
@@ -82,7 +82,7 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
 
               const SizedBox(height: 16),
 
-              // Cashbox
+              // ── Cashbox ────────────────────────────────────────────────
               Obx(
                 () => DropdownButtonFormField<String>(
                   key: ValueKey(
@@ -113,7 +113,7 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
 
               const SizedBox(height: 16),
 
-              // Category
+              // ── Category ───────────────────────────────────────────────
               Obx(
                 () => DropdownButtonFormField<String>(
                   key: ValueKey(
@@ -145,36 +145,33 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
 
               const SizedBox(height: 16),
 
-              // Nominal
+              // ── Nominal ────────────────────────────────────────────────
               TextFormField(
                 controller: c.nominal,
-                decoration: const InputDecoration(labelText: "Nominal (Rp)"),
+                decoration: const InputDecoration(labelText: 'Nominal (Rp)'),
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return "Nominal wajib diisi";
-                  }
-                  if (double.tryParse(v) == null) {
-                    return "Nominal tidak valid";
-                  }
+                  if (v == null || v.trim().isEmpty)
+                    return 'Nominal wajib diisi';
+                  if (double.tryParse(v) == null) return 'Nominal tidak valid';
                   return null;
                 },
               ),
 
               const SizedBox(height: 16),
 
-              // Description
+              // ── Description ────────────────────────────────────────────
               TextFormField(
                 controller: c.description,
                 maxLines: 2,
                 decoration: const InputDecoration(
-                  labelText: "Deskripsi (opsional)",
+                  labelText: 'Deskripsi (opsional)',
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              // Submit Button
+              // ── Submit ─────────────────────────────────────────────────
               Obx(
                 () => SizedBox(
                   width: double.infinity,

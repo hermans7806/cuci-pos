@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/income_controller.dart';
+import 'income_add_screen.dart';
 
 class IncomeListScreen extends StatefulWidget {
   const IncomeListScreen({super.key});
@@ -25,12 +26,9 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
       appBar: AppBar(title: const Text('Pendapatan')),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // No arguments → add mode
-          final result = await Navigator.pushNamed(
-            context,
-            '/settings/finances/income/add',
-          );
-          if (result == true) c.loadIncomes();
+          // No income passed → add mode
+          final result = await Get.to(() => const IncomeAddScreen());
+          if (result == true) c.applyFilters();
         },
         child: const Icon(Icons.add),
       ),
@@ -111,7 +109,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                   () => GestureDetector(
                     onTap: () async {
                       final picked = await showDatePicker(
-                        context: context, // ← local context, not Get.context!
+                        context: context,
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
                         initialDate: c.startDate.value,
@@ -198,7 +196,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
             child: const Icon(Icons.delete, color: Colors.white),
           ),
           confirmDismiss: (_) => showDialog<bool>(
-            context: context, // ← local context
+            context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Hapus Pendapatan?'),
               content: const Text(
@@ -223,14 +221,10 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
           child: Card(
             child: ListTile(
               onTap: () async {
-                // Pass the full model — rawCashboxId/rawCategoryId are intact
-                // so the edit form can pre-select the correct dropdown values.
-                final result = await Navigator.pushNamed(
-                  context, // ← local context
-                  '/settings/finances/income/add',
-                  arguments: inc,
-                );
-                if (result == true) c.loadIncomes();
+                // Pass the model directly via constructor — type-safe,
+                // no dependency on Get.arguments or route registration.
+                final result = await Get.to(() => IncomeAddScreen(income: inc));
+                if (result == true) c.applyFilters();
               },
               title: Text('Rp ${inc.nominal.toStringAsFixed(0)}'),
               subtitle: Text(

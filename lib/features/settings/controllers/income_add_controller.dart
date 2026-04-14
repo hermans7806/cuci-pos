@@ -9,6 +9,10 @@ import '../../../data/models/income_model.dart';
 import '../../../data/services/shared_reference.dart';
 
 class IncomeAddController extends GetxController {
+  /// Pass the model to edit directly from the screen — do NOT rely on
+  /// Get.arguments, which may be cleared by Get.delete before onInit runs.
+  IncomeAddController({IncomeModel? editingModel}) : _editing = editingModel;
+
   final formKey = GlobalKey<FormState>();
 
   // ── Firestore data ───────────────────────────────────────────────────────
@@ -30,10 +34,8 @@ class IncomeAddController extends GetxController {
 
   // ── Internal ─────────────────────────────────────────────────────────────
   late String _activeBranchId;
-  IncomeModel? _editing;
+  final IncomeModel? _editing;
 
-  /// Safe to call during the very first build — captured synchronously
-  /// in onInit() before any await.
   bool get isEditing => _editing != null;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -41,14 +43,6 @@ class IncomeAddController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
-    // Capture Get.arguments SYNCHRONOUSLY here, before any await.
-    // This guarantees isEditing returns the correct value on the first build,
-    // which happens before _bootstrap() completes.
-    _editing = Get.arguments is IncomeModel
-        ? Get.arguments as IncomeModel
-        : null;
-
     _bootstrap();
   }
 
@@ -117,7 +111,7 @@ class IncomeAddController extends GetxController {
   Future<void> save() async {
     if (!formKey.currentState!.validate()) return;
 
-    isSaving.value = true; // ← isSaving, NOT isLoading
+    isSaving.value = true;
     try {
       final db = FirebaseFirestore.instance;
 
@@ -135,7 +129,7 @@ class IncomeAddController extends GetxController {
         payload['createdAt'] = FieldValue.serverTimestamp();
         await db.collection('incomes').add(payload);
       } else {
-        await db.collection('incomes').doc(_editing!.id).update(payload);
+        await db.collection('incomes').doc(_editing.id).update(payload);
       }
 
       Get.back(result: true);
