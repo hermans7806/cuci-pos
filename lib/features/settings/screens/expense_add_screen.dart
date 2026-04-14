@@ -1,17 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../data/models/expense_model.dart';
 import '../controllers/expense_add_controller.dart';
 
-class ExpenseAddScreen extends StatelessWidget {
-  const ExpenseAddScreen({super.key});
+class ExpenseAddScreen extends StatefulWidget {
+  final ExpenseModel? expense;
+
+  const ExpenseAddScreen({super.key, this.expense});
+
+  @override
+  State<ExpenseAddScreen> createState() => _ExpenseAddScreenState();
+}
+
+class _ExpenseAddScreenState extends State<ExpenseAddScreen> {
+  late final ExpenseAddController c;
+
+  @override
+  void initState() {
+    super.initState();
+    Get.delete<ExpenseAddController>(force: true);
+    c = Get.put(ExpenseAddController(editingModel: widget.expense));
+  }
+
+  @override
+  void dispose() {
+    Get.delete<ExpenseAddController>(force: true);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(ExpenseAddController());
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Tambah Pengeluaran")),
+      appBar: AppBar(
+        title: Text(c.isEditing ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'),
+      ),
       body: Obx(() {
         if (c.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -22,112 +45,145 @@ class ExpenseAddScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Cashbox
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Cashbox"),
-                value: c.selectedCashbox.value.isEmpty
-                    ? null
-                    : c.selectedCashbox.value,
-                items: c.cashboxes
-                    .map(
-                      (cb) =>
-                          DropdownMenuItem(value: cb.id, child: Text(cb.name)),
-                    )
-                    .toList(),
-                validator: (v) => v == null ? "Pilih cashbox" : null,
-                onChanged: (v) => c.selectedCashbox.value = v!,
+              // ── Date picker ────────────────────────────────────────────
+              Obx(
+                () => GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                      initialDate: c.date.value,
+                    );
+                    if (picked != null) c.date.value = picked;
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Tanggal'),
+                        Text(
+                          '${c.date.value.year}-'
+                          '${c.date.value.month.toString().padLeft(2, '0')}-'
+                          '${c.date.value.day.toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),
 
-              // Category
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Kategori"),
-                value: c.selectedCategory.value.isEmpty
-                    ? null
-                    : c.selectedCategory.value,
-                items: c.categories
-                    .map(
-                      (cat) => DropdownMenuItem(
-                        value: cat.id,
-                        child: Text(cat.name),
-                      ),
-                    )
-                    .toList(),
-                validator: (v) =>
-                    v == null ? "Pilih kategori pengeluaran" : null,
-                onChanged: (v) => c.selectedCategory.value = v!,
+              // ── Cashbox ────────────────────────────────────────────────
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  key: ValueKey(
+                    'cashbox_${c.cashboxes.length}_${c.selectedCashbox.value}',
+                  ),
+                  decoration: const InputDecoration(labelText: 'Cashbox'),
+                  value:
+                      c.selectedCashbox.value.isEmpty ||
+                          !c.cashboxes.any(
+                            (cb) => cb.id == c.selectedCashbox.value,
+                          )
+                      ? null
+                      : c.selectedCashbox.value,
+                  items: c.cashboxes
+                      .map(
+                        (cb) => DropdownMenuItem(
+                          value: cb.id,
+                          child: Text(cb.name),
+                        ),
+                      )
+                      .toList(),
+                  validator: (v) => v == null ? 'Pilih cashbox' : null,
+                  onChanged: (v) {
+                    if (v != null) c.selectedCashbox.value = v;
+                  },
+                ),
               ),
 
               const SizedBox(height: 16),
 
-              // Nominal
+              // ── Category ───────────────────────────────────────────────
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  key: ValueKey(
+                    'category_${c.categories.length}_${c.selectedCategory.value}',
+                  ),
+                  decoration: const InputDecoration(labelText: 'Kategori'),
+                  value:
+                      c.selectedCategory.value.isEmpty ||
+                          !c.categories.any(
+                            (cat) => cat.id == c.selectedCategory.value,
+                          )
+                      ? null
+                      : c.selectedCategory.value,
+                  items: c.categories
+                      .map(
+                        (cat) => DropdownMenuItem(
+                          value: cat.id,
+                          child: Text(cat.name),
+                        ),
+                      )
+                      .toList(),
+                  validator: (v) =>
+                      v == null ? 'Pilih kategori pengeluaran' : null,
+                  onChanged: (v) {
+                    if (v != null) c.selectedCategory.value = v;
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── Nominal ────────────────────────────────────────────────
               TextFormField(
                 controller: c.nominal,
-                decoration: const InputDecoration(labelText: "Nominal (Rp)"),
+                decoration: const InputDecoration(labelText: 'Nominal (Rp)'),
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return "Nominal wajib diisi";
-                  }
-                  if (double.tryParse(v) == null) {
-                    return "Nominal tidak valid";
-                  }
+                  if (v == null || v.trim().isEmpty)
+                    return 'Nominal wajib diisi';
+                  if (double.tryParse(v) == null) return 'Nominal tidak valid';
                   return null;
                 },
               ),
 
               const SizedBox(height: 16),
 
-              // Description
+              // ── Description ────────────────────────────────────────────
               TextFormField(
                 controller: c.description,
                 maxLines: 2,
                 decoration: const InputDecoration(
-                  labelText: "Deskripsi (opsional)",
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Date picker
-              GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                    initialDate: c.date.value,
-                  );
-                  if (picked != null) c.date.value = picked;
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Tanggal"),
-                      Text(
-                        "${c.date.value.year}-${c.date.value.month}-${c.date.value.day}",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+                  labelText: 'Deskripsi (opsional)',
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: c.save,
-                  child: const Text("Simpan"),
+              // ── Submit ─────────────────────────────────────────────────
+              Obx(
+                () => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: c.isSaving.value ? null : c.save,
+                    child: c.isSaving.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Simpan'),
+                  ),
                 ),
               ),
             ],
