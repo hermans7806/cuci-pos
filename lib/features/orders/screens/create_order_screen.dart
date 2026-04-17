@@ -317,7 +317,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text("Rp ${s.price} • ${s.duration} hari"),
+                            Text("Rp ${s.price} • ${s.duration / 24} hari"),
                           ],
                         ),
                       ),

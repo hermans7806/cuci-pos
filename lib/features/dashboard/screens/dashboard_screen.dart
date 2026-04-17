@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../profile/controllers/profile_controller.dart';
+import '../controllers/dashboard_controller.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,6 +16,9 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final user = FirebaseAuth.instance.currentUser!;
   final ProfileController profileCtrl = Get.find<ProfileController>();
+
+  final dashboardCtrl = Get.put(DashboardController());
+
   int _currentIndex = 0;
   String selectedTab = 'Transaksi'; // or 'Keuangan'
 
@@ -115,22 +119,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // 🔹 Transaction status icons (2 rows × 3 columns)
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 0.9,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              children: [
-                _buildMenuIcon(Icons.check_circle, 'Konfirmasi', '0'),
-                _buildMenuIcon(Icons.location_pin, 'Penjemputan', '0'),
-                _buildMenuIcon(Icons.list_alt, 'Antrian', '21'),
-                _buildMenuIcon(Icons.local_laundry_service, 'Proses', '22'),
-                _buildMenuIcon(Icons.shopping_basket, 'Siap Ambil', '95'),
-                _buildMenuIcon(Icons.local_shipping, 'Siap Antar', '0'),
-              ],
-            ),
+            Obx(() {
+              return GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 0.9,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                children: [
+                  _buildMenuIcon(
+                    Icons.check_circle,
+                    'Konfirmasi',
+                    dashboardCtrl.konfirmasi,
+                  ),
+
+                  _buildMenuIcon(
+                    Icons.location_pin,
+                    'Penjemputan',
+                    dashboardCtrl.penjemputan,
+                  ),
+
+                  _buildMenuIcon(
+                    Icons.list_alt,
+                    'Antrian',
+                    dashboardCtrl.antrian,
+                  ),
+
+                  _buildMenuIcon(
+                    Icons.local_laundry_service,
+                    'Proses',
+                    dashboardCtrl.proses,
+                  ),
+
+                  _buildMenuIcon(
+                    Icons.shopping_basket,
+                    'Siap Ambil',
+                    dashboardCtrl.siapAmbil,
+                  ),
+
+                  _buildMenuIcon(
+                    Icons.local_shipping,
+                    'Siap Antar',
+                    dashboardCtrl.siapAntar,
+                  ),
+                ],
+              );
+            }),
 
             const SizedBox(height: 32),
 
@@ -252,15 +287,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTransaksiTab() {
-    return Row(
-      key: const ValueKey('Transaksi'),
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildStatItem(Icons.download, 'Masuk', '0'),
-        _buildStatItem(Icons.push_pin, 'Harus Selesai', '17'),
-        _buildStatItem(Icons.access_time, 'Terlambat', '3'),
-      ],
-    );
+    final c = Get.find<DashboardController>();
+
+    return Obx(() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            Icons.download,
+            'Masuk',
+            dashboardCtrl.todayOrders.toString(),
+          ),
+          _buildStatItem(
+            Icons.push_pin,
+            'Harus Selesai',
+            dashboardCtrl.dueToday.toString(),
+          ),
+          _buildStatItem(
+            Icons.access_time,
+            'Terlambat',
+            dashboardCtrl.late.toString(),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildStatItem(IconData icon, String label, String value) {
@@ -280,7 +330,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildMenuIcon(IconData icon, String label, String count) {
+  Widget _buildMenuIcon(IconData icon, String label, int count) {
     return Column(
       children: [
         Stack(
@@ -291,17 +341,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
               backgroundColor: Colors.blue.shade50,
               child: Icon(icon, color: Colors.blue.shade600, size: 28),
             ),
-            if (count != '0')
+            if (count > 0)
               Positioned(
                 right: 0,
                 top: 0,
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.orange,
-                  child: Text(
-                    count,
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                  ),
+                child: TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: count),
+                  duration: const Duration(milliseconds: 500),
+                  builder: (_, value, __) {
+                    return CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.orange,
+                      child: Text(
+                        "$value",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
           ],

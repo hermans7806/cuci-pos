@@ -16,13 +16,13 @@ class ServiceItemModel {
   final String id;
   final String name;
   final int price;
-  final int duration; // days or hours depending on your system
+  final int durationHours; // days or hours depending on your system
 
   ServiceItemModel({
     required this.id,
     required this.name,
     required this.price,
-    required this.duration,
+    required this.durationHours,
   });
 }
 
@@ -84,7 +84,7 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
         id: d.id,
         name: data['name'] ?? '',
         price: (data['price'] as num?)?.toInt() ?? 0,
-        duration: data['duration'] ?? 0,
+        durationHours: data['durationHours'] ?? 0,
       );
     }).toList();
 
@@ -173,7 +173,7 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        "Rp ${item.price}  •  ${item.duration} hari",
+                                        "Rp ${item.price}  •  ${item.durationHours / 24} hari",
                                         style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 13,
@@ -188,7 +188,7 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
                                         serviceId: cat.id,
                                         name: item.name,
                                         price: item.price,
-                                        duration: item.duration,
+                                        duration: item.durationHours,
                                         qty: 1,
                                       );
                                       widget.onAdd(selected);

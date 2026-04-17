@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/top_notification.dart';
 import '../../../data/models/customer_model.dart';
+import '../../../data/models/order_model.dart';
 import '../../../data/models/order_picker_item.dart';
 import '../../../data/models/promo_model.dart';
 import '../../../data/models/selected_service_model.dart';
@@ -443,6 +444,19 @@ class OrderController extends GetxController {
     }
   }
 
+  String _getTodayDocId(String branchId) {
+    final now = DateTime.now();
+    return "$branchId-${now.year}${now.month}${now.day}";
+  }
+
+  Future<void> _updateDashboardStats(String branchId, String status) async {
+    final ref = FirebaseFirestore.instance
+        .collection("dashboard_stats")
+        .doc(branchId);
+
+    await ref.set({status: FieldValue.increment(1)}, SetOptions(merge: true));
+  }
+
   // ----------------------
   // SUBMIT
   // ----------------------
@@ -470,6 +484,7 @@ class OrderController extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       final branchId = prefs.getString('activeBranchId') ?? "";
       final branchName = prefs.getString('activeBranchName') ?? "";
+      final dashboardStatus = OrderModel.mapDashboardStatus("pending");
 
       // Build service list
       final servicesData = selectedServices.map((s) {
@@ -507,11 +522,15 @@ class OrderController extends GetxController {
         "totalDiscount": discount,
         "totalFinal": totalFinal,
         "status": "pending",
+        "dashboardStatus": dashboardStatus,
         "createdAt": FieldValue.serverTimestamp(),
       };
 
       // Optionally use OrderModel to serialize — here we store as map
       await FirebaseFirestore.instance.collection("orders").add(orderData);
+
+      /// 🔥 UPDATE DASHBOARD COUNTER
+      await _updateDashboardStats(branchId, dashboardStatus);
 
       TopNotification.show(
         title: "Sukses",
