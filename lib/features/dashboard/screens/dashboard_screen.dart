@@ -132,36 +132,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icons.check_circle,
                     'Konfirmasi',
                     dashboardCtrl.konfirmasi,
+                    'konfirmasi',
                   ),
 
                   _buildMenuIcon(
                     Icons.location_pin,
                     'Penjemputan',
                     dashboardCtrl.penjemputan,
+                    'penjemputan',
                   ),
 
                   _buildMenuIcon(
                     Icons.list_alt,
                     'Antrian',
                     dashboardCtrl.antrian,
+                    'antrian',
                   ),
 
                   _buildMenuIcon(
                     Icons.local_laundry_service,
                     'Proses',
                     dashboardCtrl.proses,
+                    'proses',
                   ),
 
                   _buildMenuIcon(
                     Icons.shopping_basket,
                     'Siap Ambil',
                     dashboardCtrl.siapAmbil,
+                    'siap_ambil',
                   ),
 
                   _buildMenuIcon(
                     Icons.local_shipping,
                     'Siap Antar',
                     dashboardCtrl.siapAntar,
+                    'pengantaran',
                   ),
                 ],
               );
@@ -213,6 +219,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             case 2:
               Navigator.pushNamed(context, '/create-order');
+              break;
+
+            case 1:
+              Navigator.pushNamed(context, '/orders');
               break;
 
             case 4:
@@ -287,8 +297,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTransaksiTab() {
-    final c = Get.find<DashboardController>();
-
     return Obx(() {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -330,48 +338,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildMenuIcon(IconData icon, String label, int count) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.topRight,
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: Colors.blue.shade50,
-              child: Icon(icon, color: Colors.blue.shade600, size: 28),
-            ),
-            if (count > 0)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: 0, end: count),
-                  duration: const Duration(milliseconds: 500),
-                  builder: (_, value, __) {
-                    return CircleAvatar(
-                      radius: 10,
-                      backgroundColor: Colors.orange,
-                      child: Text(
-                        "$value",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+  Widget _buildMenuIcon(IconData icon, String label, int count, String status) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => Navigator.pushNamed(context, '/orders', arguments: status),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.blue.shade50,
+                child: Icon(icon, color: Colors.blue.shade600, size: 28),
               ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-      ],
+              if (count > 0)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: TweenAnimationBuilder<int>(
+                    tween: IntTween(begin: 0, end: count),
+                    duration: const Duration(milliseconds: 500),
+                    builder: (_, value, __) {
+                      return CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.orange,
+                        child: Text(
+                          "$value",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
     );
   }
 

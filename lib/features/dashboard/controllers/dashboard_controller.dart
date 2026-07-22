@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../data/models/order_model.dart';
+
 class DashboardController extends GetxController {
   final stats = <String, int>{}.obs;
 
@@ -66,9 +68,13 @@ class DashboardController extends GetxController {
           final map = <String, int>{};
 
           for (var d in snapshot.docs) {
-            final status =
-                (d.data() as Map<String, dynamic>)["dashboardStatus"] ??
-                "pending";
+            final data = d.data();
+            final storedStatus = data["dashboardStatus"]?.toString();
+            final status = storedStatus?.isNotEmpty == true
+                ? storedStatus!
+                : OrderModel.mapDashboardStatus(
+                    data["status"]?.toString() ?? "pending",
+                  );
             map[status] = (map[status] ?? 0) + 1;
           }
 
