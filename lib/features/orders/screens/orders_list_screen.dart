@@ -147,6 +147,8 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
     return Card(
       child: ListTile(
+        onTap: () =>
+            Navigator.pushNamed(context, '/orders/detail', arguments: order.id),
         leading: const CircleAvatar(child: Icon(Icons.local_laundry_service)),
         title: Text(customer['name']?.toString() ?? 'Pelanggan'),
         subtitle: Text(
