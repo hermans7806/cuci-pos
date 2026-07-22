@@ -44,6 +44,18 @@ class OrderController extends GetxController {
 
   bool get isValidOrder => customerName.isNotEmpty;
 
+  /// An order is ready when its longest selected service is ready.
+  int get longestServiceDurationHours => selectedServices.fold<int>(
+    0,
+    (longest, service) =>
+        service.duration > longest ? service.duration : longest,
+  );
+
+  DateTime? get estimatedCompletion {
+    if (selectedServices.isEmpty) return null;
+    return DateTime.now().add(Duration(hours: longestServiceDurationHours));
+  }
+
   void setSelectedCustomer(CustomerModel customer) {
     customerName.value = customer.name;
     customerPhone.value = customer.phone;
@@ -485,11 +497,15 @@ class OrderController extends GetxController {
       final branchId = prefs.getString('activeBranchId') ?? "";
       final branchName = prefs.getString('activeBranchName') ?? "";
       final dashboardStatus = OrderModel.mapDashboardStatus("pending");
+      final dueDate = Timestamp.fromDate(
+        DateTime.now().add(Duration(hours: longestServiceDurationHours)),
+      );
 
       // Build service list
       final servicesData = selectedServices.map((s) {
         return {
           "id": s.id,
+          "serviceId": s.serviceId,
           "name": s.name,
           "price": s.price,
           "qty": s.qty,
@@ -524,6 +540,7 @@ class OrderController extends GetxController {
         "status": "pending",
         "dashboardStatus": dashboardStatus,
         "createdAt": FieldValue.serverTimestamp(),
+        "dueDate": dueDate,
       };
 
       // Optionally use OrderModel to serialize — here we store as map

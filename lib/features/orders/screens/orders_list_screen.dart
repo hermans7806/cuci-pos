@@ -142,6 +142,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     final data = order.data();
     final customer = data['customer'] as Map<String, dynamic>? ?? {};
     final createdAt = data['createdAt'] as Timestamp?;
+    final dueDate = data['dueDate'] as Timestamp?;
     final status = _dashboardStatus(data);
     final total = (data['totalFinal'] as num?)?.toDouble() ?? 0;
 
@@ -152,9 +153,9 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
         leading: const CircleAvatar(child: Icon(Icons.local_laundry_service)),
         title: Text(customer['name']?.toString() ?? 'Pelanggan'),
         subtitle: Text(
-          '${_statuses[status] ?? status}\n${createdAt == null ? 'Baru dibuat' : DateFormat('dd MMM yyyy, HH:mm').format(createdAt.toDate())}',
+          '${_statuses[status] ?? status}\n${createdAt == null ? 'Baru dibuat' : DateFormat('dd MMM yyyy, HH:mm').format(createdAt.toDate())}${dueDate == null ? '' : '\nEstimasi selesai: ${DateFormat('dd MMM yyyy, HH:mm').format(dueDate.toDate())}'}',
         ),
-        isThreeLine: true,
+        isThreeLine: dueDate != null,
         trailing: Text(
           NumberFormat.currency(
             locale: 'id_ID',

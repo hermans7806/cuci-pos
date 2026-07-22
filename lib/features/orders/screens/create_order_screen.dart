@@ -1,6 +1,8 @@
 // FILE: create_order_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/promo_model.dart';
@@ -10,7 +12,8 @@ import './add_customer_screen.dart';
 import 'promo_picker_sheet.dart';
 
 class CreateOrderScreen extends StatefulWidget {
-  const CreateOrderScreen({super.key});
+  const CreateOrderScreen({super.key, this.orderId});
+  final String? orderId;
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -19,6 +22,9 @@ class CreateOrderScreen extends StatefulWidget {
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final controller = Get.put(OrderController());
   final notesCtrl = TextEditingController();
+  bool _loadingEdit = false;
+  Timestamp? _createdAt;
+  bool get _isEditing => widget.orderId != null;
 
   @override
   void initState() {
@@ -29,6 +35,95 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       controller.customerName.value = text;
       controller.searchCustomers(text);
     });
+    if (_isEditing) _loadForEdit();
+  }
+
+  Future<void> _loadForEdit() async {
+    setState(() => _loadingEdit = true);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(widget.orderId)
+          .get();
+      final data = doc.data();
+      if (data == null ||
+          !{'new', 'picking-up', 'pending'}.contains(data['status'])) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+      final customer = data['customer'] as Map<String, dynamic>? ?? {};
+      controller.customerName.value = customer['name']?.toString() ?? '';
+      controller.customerPhone.value = customer['phone']?.toString() ?? '';
+      controller.customerCtrl.text =
+          '${controller.customerName.value} - ${controller.customerPhone.value}';
+      controller.perfumeEnabled.value = data['perfume'] == true;
+      notesCtrl.text = data['notes']?.toString() ?? '';
+      _createdAt = data['createdAt'] as Timestamp?;
+      final services = (data['services'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (s) => SelectedService(
+              id: s['id']?.toString() ?? '',
+              serviceId: s['serviceId']?.toString() ?? '',
+              name: s['name']?.toString() ?? '',
+              price: (s['price'] as num?)?.toInt() ?? 0,
+              duration: (s['duration'] as num?)?.toInt() ?? 0,
+              qty: (s['qty'] as num?)?.toDouble() ?? 1,
+            ),
+          )
+          .toList();
+      controller.selectedServices.assignAll(services);
+      controller.totalPrice.value = services.fold<double>(
+        0,
+        (sum, s) => sum + s.price * s.qty,
+      );
+      final promoId = data['promoId']?.toString();
+      if (promoId != null && promoId.isNotEmpty) {
+        final promo = await FirebaseFirestore.instance
+            .collection('promos')
+            .doc(promoId)
+            .get();
+        if (promo.exists) controller.setPromo(PromoModel.fromFirestore(promo));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingEdit = false);
+    }
+  }
+
+  Future<void> _saveEdit() async {
+    final services = controller.selectedServices
+        .map(
+          (s) => {
+            'id': s.id,
+            'serviceId': s.serviceId,
+            'name': s.name,
+            'price': s.price,
+            'qty': s.qty,
+            'duration': s.duration,
+            'subtotal': s.price * s.qty,
+          },
+        )
+        .toList();
+    final base = _createdAt?.toDate() ?? DateTime.now();
+    final promo = controller.selectedPromo.value;
+    await FirebaseFirestore.instance
+        .collection('orders')
+        .doc(widget.orderId)
+        .update({
+          'services': services,
+          'perfume': controller.perfumeEnabled.value,
+          'notes': notesCtrl.text.trim(),
+          'promoId': promo?.id,
+          'promoRate': promo?.discountRate ?? 0,
+          'totalBeforeDiscount': controller.totalBeforePromo,
+          'totalDiscount': controller.discountAmount,
+          'totalFinal': controller.totalAfterPromo,
+          'dueDate': Timestamp.fromDate(
+            base.add(Duration(hours: controller.longestServiceDurationHours)),
+          ),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -53,22 +148,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Buat Pesanan")),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Pesanan' : 'Buat Pesanan')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _customerField(),
-            const SizedBox(height: 12),
-            _detailSection(),
-            const SizedBox(height: 12),
-            _notesSection(),
-            const SizedBox(height: 12),
-            _promoSection(),
-            const SizedBox(height: 12),
-            _billingSection(),
-          ],
-        ),
+        child: _loadingEdit
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                children: [
+                  _customerField(),
+                  const SizedBox(height: 12),
+                  _detailSection(),
+                  const SizedBox(height: 12),
+                  _estimatedCompletionSection(),
+                  const SizedBox(height: 12),
+                  _notesSection(),
+                  const SizedBox(height: 12),
+                  _promoSection(),
+                  const SizedBox(height: 12),
+                  _billingSection(),
+                ],
+              ),
       ),
       bottomNavigationBar: Obx(() {
         final total = controller.totalAfterPromo;
@@ -115,15 +214,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: controller.submitOrder,
+                  onPressed: _isEditing ? _saveEdit : controller.submitOrder,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    "Buat Transaksi",
+                  child: Text(
+                    _isEditing ? 'Simpan Perubahan' : 'Buat Transaksi',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -139,6 +238,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
+  Widget _estimatedCompletionSection() {
+    return Obx(() {
+      final dueDate = controller.estimatedCompletion;
+      if (dueDate == null) return const SizedBox.shrink();
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade100),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.event_available, color: Colors.blue),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Estimasi Selesai',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(DateFormat('dd MMM yyyy, HH:mm').format(dueDate)),
+                ],
+              ),
+            ),
+            Text('${controller.longestServiceDurationHours} jam'),
+          ],
+        ),
+      );
+    });
+  }
+
   // -------------------- CUSTOMER FIELD --------------------
   Widget _customerField() {
     return Column(
@@ -146,13 +280,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       children: [
         TextField(
           controller: controller.customerCtrl,
+          readOnly: _isEditing,
           decoration: InputDecoration(
             labelText: "Nama Pelanggan",
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.contacts),
-              onPressed: _openCustomerDialog,
-            ),
+            suffixIcon: _isEditing
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.contacts),
+                    onPressed: _openCustomerDialog,
+                  ),
           ),
         ),
         const SizedBox(height: 8),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/models/order_model.dart';
+import 'create_order_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -18,6 +19,7 @@ class OrderDetailScreen extends StatelessWidget {
     'pengantaran': 'Siap Antar',
     'selesai': 'Selesai',
   };
+  static const _editableStatuses = {'new', 'picking-up', 'pending'};
 
   String _dashboardStatus(Map<String, dynamic> order) {
     final saved = order['dashboardStatus']?.toString();
@@ -55,13 +57,13 @@ class OrderDetailScreen extends StatelessWidget {
           }
 
           final order = snapshot.data!.data()!;
-          return _buildContent(order);
+          return _buildContent(context, order);
         },
       ),
     );
   }
 
-  Widget _buildContent(Map<String, dynamic> order) {
+  Widget _buildContent(BuildContext context, Map<String, dynamic> order) {
     final customer = order['customer'] as Map<String, dynamic>? ?? {};
     final services = (order['services'] as List<dynamic>? ?? [])
         .whereType<Map<String, dynamic>>()
@@ -69,6 +71,7 @@ class OrderDetailScreen extends StatelessWidget {
     final notes = order['notes']?.toString().trim() ?? '';
     final status = _dashboardStatus(order);
     final createdAt = order['createdAt'] as Timestamp?;
+    final dueDate = order['dueDate'] as Timestamp?;
     final totalBefore = (order['totalBeforeDiscount'] as num?) ?? 0;
     final discount = (order['totalDiscount'] as num?) ?? 0;
     final totalFinal = (order['totalFinal'] as num?) ?? totalBefore - discount;
@@ -92,18 +95,43 @@ class OrderDetailScreen extends StatelessWidget {
               const SizedBox(height: 12),
               _sectionCard(
                 title: 'Status Pesanan',
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Chip(label: Text(_statusLabels[status] ?? status)),
                     Text(
                       createdAt == null
                           ? 'Baru dibuat'
-                          : DateFormat(
-                              'dd MMM yyyy, HH:mm',
-                            ).format(createdAt.toDate()),
+                          : 'Dibuat: ${DateFormat('dd MMM yyyy, HH:mm').format(createdAt.toDate())}',
                       style: const TextStyle(color: Colors.black54),
                     ),
+                    if (dueDate != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Estimasi selesai: ${DateFormat('dd MMM yyyy, HH:mm').format(dueDate.toDate())}',
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (_editableStatuses.contains(order['status'])) ...[
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  CreateOrderScreen(orderId: orderId),
+                            ),
+                          ),
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Edit Pesanan'),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
