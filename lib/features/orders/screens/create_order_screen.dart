@@ -68,6 +68,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               name: s['name']?.toString() ?? '',
               price: (s['price'] as num?)?.toInt() ?? 0,
               duration: (s['duration'] as num?)?.toInt() ?? 0,
+              processTypes: List<String>.from(s['processTypes'] ?? []),
+              itemStatus: s['itemStatus']?.toString() ?? 'pending',
               qty: (s['qty'] as num?)?.toDouble() ?? 1,
             ),
           )
@@ -100,6 +102,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             'price': s.price,
             'qty': s.qty,
             'duration': s.duration,
+            'processTypes': s.processTypes,
+            'itemStatus': s.itemStatus,
             'subtotal': s.price * s.qty,
           },
         )

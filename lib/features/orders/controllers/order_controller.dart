@@ -510,6 +510,8 @@ class OrderController extends GetxController {
           "price": s.price,
           "qty": s.qty,
           "duration": s.duration,
+          "processTypes": s.processTypes,
+          "itemStatus": "pending",
           "subtotal": s.price * s.qty,
         };
       }).toList();

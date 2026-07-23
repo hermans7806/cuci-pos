@@ -8,8 +8,13 @@ import '../../../data/models/selected_service_model.dart';
 class ServiceCategory {
   final String id;
   final String name;
+  final List<String> processTypes;
 
-  ServiceCategory({required this.id, required this.name});
+  ServiceCategory({
+    required this.id,
+    required this.name,
+    required this.processTypes,
+  });
 }
 
 class ServiceItemModel {
@@ -65,7 +70,13 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
         .get();
 
     categories = snap.docs
-        .map((d) => ServiceCategory(id: d.id, name: d['name']))
+        .map(
+          (d) => ServiceCategory(
+            id: d.id,
+            name: d['name'],
+            processTypes: List<String>.from(d['types'] ?? []),
+          ),
+        )
         .toList();
 
     setState(() {});
@@ -189,6 +200,7 @@ class _ServicePickerSheetState extends State<ServicePickerSheet> {
                                         name: item.name,
                                         price: item.price,
                                         duration: item.durationHours,
+                                        processTypes: cat.processTypes,
                                         qty: 1,
                                       );
                                       widget.onAdd(selected);
